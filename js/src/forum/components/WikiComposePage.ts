@@ -3,6 +3,8 @@ import LoadingIndicator from 'flarum/common/components/LoadingIndicator';
 import TextEditor from 'flarum/common/components/TextEditor';
 import Select from 'flarum/common/components/Select';
 import Button from 'flarum/common/components/Button';
+import PageStructure from 'flarum/forum/components/PageStructure';
+import WikiIndexSidebar from './WikiIndexSidebar';
 import { tr } from '../utils/translate';
 import { basePath, BASE_PATH, showError } from '../utils/helpers';
 import { canCreateWikiArticle } from '../utils/permissions';
@@ -68,15 +70,28 @@ export default class WikiComposePage extends Page {
   }
 
   view() {
+    return m(
+      PageStructure,
+      {
+        className: 'IndexPage LinkRobinsWiki-page LinkRobinsWiki-page--compose',
+        sidebar: () => {
+          try {
+            return m(WikiIndexSidebar, { className: 'LinkRobinsWiki-sidebar' });
+          } catch (e) {
+            return null;
+          }
+        },
+      },
+      m('div', { className: 'LinkRobinsWiki-container' }, this._renderContent())
+    );
+  }
+
+  _renderContent() {
     if (this.loading) {
-      return m('div', { className: 'LinkRobinsWiki-page LinkRobinsWiki-compose' }, m(LoadingIndicator));
+      return m(LoadingIndicator);
     }
     if (this.loadError) {
-      return m(
-        'div',
-        { className: 'LinkRobinsWiki-page LinkRobinsWiki-compose' },
-        m('div', { className: 'LinkRobinsWiki-empty' }, tr('errors.load_article', 'Could not load this article.'))
-      );
+      return m('div', { className: 'LinkRobinsWiki-empty' }, tr('errors.load_article', 'Could not load this article.'));
     }
 
     const categoryOptions: Record<string, string> = { '': tr('compose.no_category', 'No category') };
@@ -84,69 +99,54 @@ export default class WikiComposePage extends Page {
       categoryOptions[String(cat.id())] = cat.name();
     });
 
-    return m('div', { className: 'LinkRobinsWiki-page LinkRobinsWiki-compose' }, [
-      m('div', { className: 'LinkRobinsWiki-container' }, [
-        m('header', { className: 'LinkRobinsWiki-header' }, [
-          m('h1', { className: 'LinkRobinsWiki-title' }, this.editing ? tr('compose.title_edit', 'Edit article') : tr('compose.title', 'New article')),
+    return [
+      m('header', { className: 'LinkRobinsWiki-header' }, [
+        m('h1', { className: 'LinkRobinsWiki-title' }, this.editing ? tr('compose.title_edit', 'Edit article') : tr('compose.title', 'New article')),
+      ]),
+
+      m('form', { className: 'LinkRobinsWiki-form', onsubmit: (e: any) => { e.preventDefault(); this._save(); } }, [
+        m('div', { className: 'Form-group' }, [
+          m('label', tr('compose.title_label', 'Title')),
+          m('input', {
+            className: 'FormControl',
+            value: this.title,
+            placeholder: tr('compose.title_placeholder', 'Article title'),
+            oninput: (e: any) => { this.title = e.target.value; },
+          }),
         ]),
 
-        m('form', { className: 'LinkRobinsWiki-form', onsubmit: (e: any) => { e.preventDefault(); this._save(); } }, [
-          m('div', { className: 'Form-group' }, [
-            m('label', tr('compose.title_label', 'Title')),
-            m('input', {
-              className: 'FormControl',
-              value: this.title,
-              placeholder: tr('compose.title_placeholder', 'Article title'),
-              oninput: (e: any) => { this.title = e.target.value; },
-            }),
-          ]),
+        this.categories.length
+          ? m('div', { className: 'Form-group' }, [
+              m('label', tr('compose.category_label', 'Category')),
+              m(Select, {
+                options: categoryOptions,
+                value: this.categoryId,
+                onchange: (v: string) => { this.categoryId = v; },
+              }),
+            ])
+          : null,
 
-          this.categories.length
-            ? m('div', { className: 'Form-group' }, [
-                m('label', tr('compose.category_label', 'Category')),
-                m(Select, {
-                  options: categoryOptions,
-                  value: this.categoryId,
-                  onchange: (v: string) => { this.categoryId = v; },
-                }),
-              ])
-            : null,
+        m('div', { className: 'Form-group' }, [
+          m('label', tr('compose.body_label', 'Content')),
+          m(TextEditor, {
+            value: this.body,
+            disabled: this.saving,
+            placeholder: tr('compose.body_placeholder', 'Write the article. Markdown is supported.'),
+            onchange: (v: string) => { this.body = v; },
+            onsubmit: () => this._save(),
+          }),
+        ]),
 
-          m('div', { className: 'Form-group' }, [
-            m('label', tr('compose.body_label', 'Content')),
-            m(TextEditor, {
-              value: this.body,
-              disabled: this.saving,
-              placeholder: tr('compose.body_placeholder', 'Write the article. Markdown is supported.'),
-              onchange: (v: string) => { this.body = v; },
-              onsubmit: () => this._save(),
-            }),
-          ]),
-
-          m('div', { className: 'Form-group LinkRobinsWiki-formActions' }, [
-            m(
-              Button,
-              {
-                type: 'submit',
-                className: 'Button Button--primary',
-                loading: this.saving,
-                disabled: this.saving,
-              },
-              this.editing ? tr('compose.submit_update', 'Save changes') : tr('compose.submit_create', 'Publish article')
-            ),
-            m(
-              Button,
-              {
-                type: 'button',
-                className: 'Button',
-                onclick: () => this._cancel(),
-              },
-              tr('action.cancel', 'Cancel')
-            ),
-          ]),
+        m('div', { className: 'Form-group LinkRobinsWiki-formActions' }, [
+          m(
+            Button,
+            { type: 'submit', className: 'Button Button--primary', loading: this.saving, disabled: this.saving },
+            this.editing ? tr('compose.submit_update', 'Save changes') : tr('compose.submit_create', 'Publish article')
+          ),
+          m(Button, { type: 'button', className: 'Button', onclick: () => this._cancel() }, tr('action.cancel', 'Cancel')),
         ]),
       ]),
-    ]);
+    ];
   }
 
   _save() {

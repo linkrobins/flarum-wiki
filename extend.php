@@ -29,6 +29,10 @@ return [
 
     new Extend\Locales(__DIR__ . '/locale'),
 
+    (new Extend\Settings())
+        ->default('linkrobins-wiki.index_layout', '')
+        ->serializeToForum('linkrobinsWikiIndexLayout', 'linkrobins-wiki.index_layout'),
+
     (new Extend\ApiResource(WikiCategoryResource::class)),
     (new Extend\ApiResource(WikiArticleResource::class)),
     (new Extend\ApiResource(WikiRevisionResource::class)),

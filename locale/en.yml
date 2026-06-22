@@ -3,6 +3,17 @@ linkrobins-wiki:
     permissions:
       create_article: 'Create wiki articles'
       edit_articles: 'Edit and moderate any wiki article'
+    index_layout:
+      heading: 'Wiki home page'
+      intro: 'Compose what the /wiki landing page shows using shortcodes. Leave blank to list all articles.'
+      label: 'Home page layout'
+      help: 'Each shortcode goes on its own line. Lines that are not shortcodes are shown as text; lines starting with #, ## or ### become headings.'
+      shortcodes_heading: 'Available shortcodes'
+      shortcode_articles: 'List all articles.'
+      shortcode_articles_cat: 'List a category (by slug or id), optionally limited to N most-recent. Add title="…" for a heading.'
+      shortcode_article: 'Link a single article by id.'
+      shortcode_categories: 'Show the category list.'
+      shortcode_heading: 'A heading (## and ### for smaller).'
     categories:
       heading: 'Wiki categories'
       intro: 'Create and organize the categories articles can be filed under.'
@@ -10,6 +21,7 @@ linkrobins-wiki:
       edit_button: Edit
       delete_button: Delete
       empty: 'No categories yet. Create one to get started.'
+      this_category: 'this category'
       column_name: Name
       column_slug: Slug
       column_articles: Articles
@@ -44,6 +56,7 @@ linkrobins-wiki:
       empty: 'No articles to show.'
       untitled: 'Untitled'
       deleted_badge: 'Deleted'
+      no_categories: 'No categories yet.'
     compose:
       title: 'New article'
       title_edit: 'Edit article'

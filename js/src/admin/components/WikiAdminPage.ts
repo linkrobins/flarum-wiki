@@ -2,7 +2,7 @@ import ExtensionPage from 'flarum/admin/components/ExtensionPage';
 import Button from 'flarum/common/components/Button';
 import LoadingIndicator from 'flarum/common/components/LoadingIndicator';
 import CategoryEditorModal from './CategoryEditorModal';
-import { t, tx, showError, loadCategoriesList, deleteCategory } from '../utils';
+import { t, loadCategoriesList } from '../utils';
 
 export default class WikiAdminPage extends ExtensionPage {
   loading = true;
@@ -31,22 +31,62 @@ export default class WikiAdminPage extends ExtensionPage {
     return m('div', { className: 'ExtensionPage-settings' }, [
       m('div', { className: 'container' }, [
         m('div', { className: 'LinkRobinsWikiAdmin' }, [
-          m('h2', t('linkrobins-wiki.admin.categories.heading')),
-          m('p', { className: 'helpText' }, t('linkrobins-wiki.admin.categories.intro')),
-
-          m(
-            Button,
-            {
-              className: 'Button Button--primary',
-              icon: 'fas fa-plus',
-              onclick: () => this._openEditor(null),
-            },
-            t('linkrobins-wiki.admin.categories.new_button')
-          ),
-
-          this.loading ? m(LoadingIndicator) : this._renderTable(),
+          this._renderIndexLayout(),
+          this._renderCategories(),
         ]),
       ]),
+    ]);
+  }
+
+  // --- Index layout (customizable homepage) ----------------------------
+
+  _renderIndexLayout() {
+    return m('section', { className: 'LinkRobinsWikiAdmin-section' }, [
+      m('h2', t('linkrobins-wiki.admin.index_layout.heading')),
+      m('p', { className: 'helpText' }, t('linkrobins-wiki.admin.index_layout.intro')),
+
+      this.buildSettingComponent({
+        type: 'textarea',
+        setting: 'linkrobins-wiki.index_layout',
+        label: t('linkrobins-wiki.admin.index_layout.label'),
+        help: t('linkrobins-wiki.admin.index_layout.help'),
+        rows: 10,
+        placeholder: '[articles limit="5" title="Recent"]\n[categories]',
+      }),
+
+      m('div', { className: 'LinkRobinsWikiAdmin-shortcodes' }, [
+        m('h4', t('linkrobins-wiki.admin.index_layout.shortcodes_heading')),
+        m('ul', [
+          this._shortcodeRow('[articles]', 'shortcode_articles'),
+          this._shortcodeRow('[articles category="slug" limit="5"]', 'shortcode_articles_cat'),
+          this._shortcodeRow('[article id="3"]', 'shortcode_article'),
+          this._shortcodeRow('[categories]', 'shortcode_categories'),
+          this._shortcodeRow('# Heading', 'shortcode_heading'),
+        ]),
+      ]),
+
+      this.submitButton(),
+    ]);
+  }
+
+  _shortcodeRow(code: string, key: string) {
+    return m('li', [m('code', code), ' — ', t('linkrobins-wiki.admin.index_layout.' + key)]);
+  }
+
+  // --- Categories ------------------------------------------------------
+
+  _renderCategories() {
+    return m('section', { className: 'LinkRobinsWikiAdmin-section' }, [
+      m('h2', t('linkrobins-wiki.admin.categories.heading')),
+      m('p', { className: 'helpText' }, t('linkrobins-wiki.admin.categories.intro')),
+
+      m(
+        Button,
+        { className: 'Button Button--primary', icon: 'fas fa-plus', onclick: () => this._openEditor(null) },
+        t('linkrobins-wiki.admin.categories.new_button')
+      ),
+
+      this.loading ? m(LoadingIndicator) : this._renderTable(),
     ]);
   }
 
@@ -70,26 +110,23 @@ export default class WikiAdminPage extends ExtensionPage {
         ]),
         m('td', m('code', cat.slug())),
         m('td', String(cat.articleCount ? cat.articleCount() : 0)),
-        m('td', { className: 'LinkRobinsWikiAdmin-rowActions' }, [
-          m(Button, { className: 'Button Button--text', icon: 'fas fa-pencil-alt', onclick: () => this._openEditor(cat) }, t('linkrobins-wiki.admin.categories.edit_button')),
-          m(Button, { className: 'Button Button--text', icon: 'fas fa-trash', onclick: () => this._delete(cat) }, t('linkrobins-wiki.admin.categories.delete_button')),
-        ]),
+        m('td', { className: 'LinkRobinsWikiAdmin-rowActions' },
+          m(
+            Button,
+            {
+              className: 'Button',
+              icon: 'fas fa-pencil-alt',
+              title: t('linkrobins-wiki.admin.categories.edit_button'),
+              onclick: () => this._openEditor(cat),
+            },
+            t('linkrobins-wiki.admin.categories.edit_button')
+          )
+        ),
       ]))),
     ]);
   }
 
   _openEditor(category: any) {
-    app.modal.show(CategoryEditorModal, {
-      category,
-      onsaved: () => this._load(),
-    });
-  }
-
-  _delete(category: any) {
-    const msg = tx('linkrobins-wiki.admin.categories.delete_confirm_named', { name: category.name() });
-    if (!confirm(msg)) return;
-    deleteCategory(category)
-      .then(() => this._load())
-      .catch(() => showError(tx('linkrobins-wiki.admin.category_editor.error_delete')));
+    app.modal.show(CategoryEditorModal, { category, onSaved: () => this._load() });
   }
 }

@@ -2,6 +2,8 @@ import Page from 'flarum/common/components/Page';
 import LoadingIndicator from 'flarum/common/components/LoadingIndicator';
 import Button from 'flarum/common/components/Button';
 import Dropdown from 'flarum/common/components/Dropdown';
+import PageStructure from 'flarum/forum/components/PageStructure';
+import WikiIndexSidebar from './WikiIndexSidebar';
 import { tr } from '../utils/translate';
 import { basePath, BASE_PATH, formatDate, userLink, showError } from '../utils/helpers';
 import { canEditWikiArticles } from '../utils/permissions';
@@ -54,37 +56,48 @@ export default class WikiShowPage extends Page {
   }
 
   view() {
+    return m(
+      PageStructure,
+      {
+        className: 'IndexPage LinkRobinsWiki-page LinkRobinsWiki-page--show',
+        sidebar: () => {
+          try {
+            return m(WikiIndexSidebar, { className: 'LinkRobinsWiki-sidebar' });
+          } catch (e) {
+            return null;
+          }
+        },
+      },
+      m('div', { className: 'LinkRobinsWiki-container' }, this._renderContent())
+    );
+  }
+
+  _renderContent() {
     if (this.loading) {
-      return m('div', { className: 'LinkRobinsWiki-page LinkRobinsWiki-show' }, m(LoadingIndicator));
+      return m(LoadingIndicator);
     }
     if (this.error || !this.article) {
-      return m(
-        'div',
-        { className: 'LinkRobinsWiki-page LinkRobinsWiki-show' },
-        m('div', { className: 'LinkRobinsWiki-empty' }, tr('errors.load_article', 'Could not load this article.'))
-      );
+      return m('div', { className: 'LinkRobinsWiki-empty' }, tr('errors.load_article', 'Could not load this article.'));
     }
 
     const article = this.article;
     const isDeleted = !!(article.isDeleted && article.isDeleted());
 
-    return m('div', { className: 'LinkRobinsWiki-page LinkRobinsWiki-show' }, [
-      m('div', { className: 'LinkRobinsWiki-container' }, [
-        isDeleted
-          ? m('div', { className: 'LinkRobinsWiki-deletedNotice' }, tr('show.deleted_notice', 'This article is deleted. Only editors can see it.'))
-          : null,
+    return [
+      isDeleted
+        ? m('div', { className: 'LinkRobinsWiki-deletedNotice' }, tr('show.deleted_notice', 'This article is deleted. Only editors can see it.'))
+        : null,
 
-        m('header', { className: 'LinkRobinsWiki-articleHeader' }, [
-          m('h1', { className: 'LinkRobinsWiki-articleTitle' }, article.title()),
-          this._renderControls(article),
-          this._renderByline(article),
-        ]),
-
-        m('div', { className: 'LinkRobinsWiki-articleBody Post-body' }, m.trust(article.contentHtml() || '')),
-
-        this._renderHistory(article),
+      m('header', { className: 'LinkRobinsWiki-articleHeader' }, [
+        this._renderControls(article),
+        m('h1', { className: 'LinkRobinsWiki-articleTitle' }, article.title()),
+        this._renderByline(article),
       ]),
-    ]);
+
+      m('div', { className: 'LinkRobinsWiki-articleBody Post-body' }, m.trust(article.contentHtml() || '')),
+
+      this._renderHistory(article),
+    ];
   }
 
   _renderByline(article: any) {
@@ -187,7 +200,7 @@ export default class WikiShowPage extends Page {
 
   _renderRevisions() {
     if (this.revisionsLoading || this.revisions === null) {
-      return m(LoadingIndicator, { className: 'LoadingIndicator--inline' });
+      return m(LoadingIndicator, { display: 'inline' });
     }
     if (!this.revisions.length) {
       return m('div', { className: 'LinkRobinsWiki-empty' }, tr('show.no_history', 'No revisions yet.'));

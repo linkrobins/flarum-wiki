@@ -268,3 +268,67 @@
         margin-bottom: 12px;
     }
 }
+
+// --- Customizable home page ------------------------------------------
+
+.LinkRobinsWiki-home {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+}
+
+.LinkRobinsWiki-homeBlock-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0 0 12px;
+}
+
+.LinkRobinsWiki-prose {
+    line-height: 1.6;
+
+    h1 { font-size: 1.6rem; font-weight: 700; margin: 0 0 8px; }
+    h2 { font-size: 1.25rem; font-weight: 700; margin: 16px 0 8px; }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 12px 0 6px; }
+    p  { margin: 0 0 8px; color: var(--text-color, inherit); }
+}
+
+.LinkRobinsWiki-categoryCards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+.LinkRobinsWiki-categoryCard {
+    display: block;
+    padding: 16px 18px;
+    border: 1px solid var(--control-bg, rgba(0,0,0,0.1));
+    border-radius: 8px;
+    background: var(--body-bg, #fff);
+    color: inherit;
+    text-decoration: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+
+    &:hover {
+        border-color: var(--primary-color, #07adcc);
+        box-shadow: 0 2px 8px var(--shadow-color, rgba(0,0,0,0.08));
+        text-decoration: none;
+    }
+}
+
+.LinkRobinsWiki-categoryCard-icon {
+    font-size: 1.3rem;
+    color: var(--primary-color, #07adcc);
+    margin-right: 8px;
+}
+
+.LinkRobinsWiki-categoryCard-name {
+    font-weight: 700;
+}
+
+.LinkRobinsWiki-categoryCard-desc {
+    display: block;
+    margin-top: 6px;
+    color: var(--muted-color, #888);
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
