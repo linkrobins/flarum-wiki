@@ -37,8 +37,11 @@ export function formatDate(value: Date | string | null | undefined): string {
     // Format date and time separately and join with "at" rather than
     // toLocaleString's single comma-glued string, which reads as an awkward
     // double-comma run when embedded in a sentence.
-    const datePart = d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-    const timePart = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    // Format in the forum's selected locale (not just the browser's), so dates
+    // localize with the rest of the UI.
+    const locale = (app && app.data && app.data.locale) || undefined;
+    const datePart = d.toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' });
+    const timePart = d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
     return trText('common.date_at_time', '{date} at {time}', { date: datePart, time: timePart });
   } catch (e) {
     return '';
