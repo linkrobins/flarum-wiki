@@ -25,6 +25,11 @@ class GlobalPolicy extends AbstractPolicy
         return WikiAbilities::isEditor($actor);
     }
 
+    public function comment(User $actor): bool
+    {
+        return WikiAbilities::canComment($actor);
+    }
+
     public function manageCategories(User $actor): bool
     {
         return $actor->isAdmin();

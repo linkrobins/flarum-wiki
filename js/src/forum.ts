@@ -5,6 +5,7 @@ import LinkButton from 'flarum/common/components/LinkButton';
 import WikiCategory from './common/models/WikiCategory';
 import WikiArticle from './common/models/WikiArticle';
 import WikiRevision from './common/models/WikiRevision';
+import WikiComment from './common/models/WikiComment';
 
 import WikiIndexPage from './forum/components/WikiIndexPage';
 import WikiComposePage from './forum/components/WikiComposePage';
@@ -19,6 +20,7 @@ app.initializers.add('linkrobins-wiki', () => {
   app.store.models['linkrobins-wiki-categories'] = WikiCategory;
   app.store.models['linkrobins-wiki-articles'] = WikiArticle;
   app.store.models['linkrobins-wiki-revisions'] = WikiRevision;
+  app.store.models['linkrobins-wiki-comments'] = WikiComment;
 
   app.routes['linkrobins-wiki.index'] = { path: BASE_PATH, component: WikiIndexPage };
   app.routes['linkrobins-wiki.compose'] = { path: BASE_PATH + '/new', component: WikiComposePage };

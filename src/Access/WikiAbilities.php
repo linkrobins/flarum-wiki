@@ -20,6 +20,7 @@ class WikiAbilities
 {
     public const CREATE_ARTICLE = 'linkrobins-wiki.createArticle';
     public const EDIT_ARTICLES = 'linkrobins-wiki.editArticles';
+    public const COMMENT = 'linkrobins-wiki.comment';
 
     /**
      * Whether the actor may edit and moderate any article (admins always can).
@@ -31,6 +32,18 @@ class WikiAbilities
         }
 
         return $actor->isAdmin() || $actor->hasPermission(self::EDIT_ARTICLES);
+    }
+
+    /**
+     * Whether the actor may post comments on articles (admins always can).
+     */
+    public static function canComment(User $actor): bool
+    {
+        if ($actor->isGuest()) {
+            return false;
+        }
+
+        return $actor->isAdmin() || $actor->hasPermission(self::COMMENT);
     }
 
     /**

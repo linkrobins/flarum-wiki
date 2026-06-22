@@ -177,7 +177,8 @@
 .LinkRobinsWiki-byline {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
+    align-items: center;
+    gap: 6px;
     font-size: 0.85rem;
     color: var(--muted-color, #888);
 
@@ -185,6 +186,10 @@
         color: inherit;
         font-weight: 600;
     }
+}
+
+.LinkRobinsWiki-byline-sep {
+    opacity: 0.5;
 }
 
 .LinkRobinsWiki-byline-cat {
@@ -331,4 +336,251 @@
     color: var(--muted-color, #888);
     font-size: 0.9rem;
     line-height: 1.4;
+}
+
+// --- Article editor (compose/edit) -----------------------------------
+// Flarum's TextEditor is short and not full-width outside the docked composer;
+// give the article body a generous, full-width writing area.
+.LinkRobinsWiki-form {
+    .Form-group {
+        display: block;
+    }
+
+    .TextEditor {
+        display: block;
+        width: 100%;
+    }
+
+    .TextEditor textarea,
+    .TextEditor [contenteditable] {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+        min-height: 340px;
+        resize: vertical;
+    }
+}
+
+// --- Revision history / GitHub-style diff -----------------------------
+
+.LinkRobinsWiki-revision-caret {
+    color: var(--muted-color, #888);
+    font-size: 0.85em;
+    width: 10px;
+}
+
+.LinkRobinsWiki-revision-tag {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    background: var(--control-bg, rgba(0,0,0,0.06));
+    color: var(--muted-color, #888);
+    padding: 1px 7px;
+    border-radius: 999px;
+}
+
+.LinkRobinsWiki-revisionDiff {
+    padding: 6px 4px 18px;
+}
+
+.LinkRobinsWiki-diff-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted-color, #888);
+    margin-bottom: 10px;
+}
+
+.LinkRobinsWiki-diff-titleChange {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    font-size: 0.9rem;
+
+    .fas { color: var(--muted-color, #888); font-size: 0.8em; }
+}
+
+.LinkRobinsWiki-diff-titleLabel {
+    font-weight: 600;
+    color: var(--muted-color, #888);
+}
+
+.LinkRobinsWiki-diff {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    border: 1px solid var(--control-bg, rgba(0,0,0,0.12));
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.LinkRobinsWiki-diff-line {
+    display: flex;
+    white-space: pre-wrap;
+    word-break: break-word;
+
+    &.is-add { background: rgba(46, 160, 67, 0.18); }
+    &.is-del { background: rgba(248, 81, 73, 0.18); }
+    &.is-eq  { background: transparent; }
+}
+
+.LinkRobinsWiki-diff-sign {
+    flex: 0 0 24px;
+    text-align: center;
+    user-select: none;
+    color: var(--muted-color, #888);
+}
+.LinkRobinsWiki-diff-line.is-add .LinkRobinsWiki-diff-sign { color: #1a7f37; }
+.LinkRobinsWiki-diff-line.is-del .LinkRobinsWiki-diff-sign { color: #cf222e; }
+
+.LinkRobinsWiki-diff-text {
+    flex: 1;
+    min-width: 0;
+    padding-right: 10px;
+}
+
+.LinkRobinsWiki-diff-fold {
+    text-align: center;
+    color: var(--muted-color, #888);
+    background: var(--control-bg, rgba(0,0,0,0.03));
+    padding: 2px 0;
+    user-select: none;
+}
+
+.LinkRobinsWiki-diff-add {
+    color: #1a7f37;
+    font-weight: 600;
+}
+.LinkRobinsWiki-diff-del {
+    color: #cf222e;
+    font-weight: 600;
+    text-decoration: line-through;
+}
+
+.LinkRobinsWiki-diff-none {
+    font-size: 0.85rem;
+    color: var(--muted-color, #888);
+    font-style: italic;
+}
+
+// --- Docked composer (article + comment) -----------------------------
+
+.LinkRobinsWiki-composerTitle {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    i { color: var(--primary-color, #07adcc); }
+}
+
+.LinkRobinsWiki-composerTitle-cat {
+    font-weight: 400;
+    color: var(--muted-color, #888);
+}
+
+// Each header row on its own line (core lays them inline-block by default).
+.LinkRobinsWiki-articleComposer,
+.LinkRobinsWiki-commentComposer {
+    .ComposerBody-header > li {
+        display: block;
+        margin-right: 0;
+    }
+}
+
+// Discussion-style click-to-write box reused for the article body + comments.
+.LinkRobinsWiki-composePreview,
+.LinkRobinsWiki-comments-form {
+    display: block;
+    width: 100%;
+
+    .ReplyPlaceholder,
+    .Post {
+        display: block;
+        width: 100%;
+        margin: 0;
+        box-sizing: border-box;
+    }
+}
+
+// --- Comments --------------------------------------------------------
+
+.LinkRobinsWiki-comments {
+    margin-top: 32px;
+    border-top: 1px solid var(--control-bg, rgba(0,0,0,0.08));
+    padding-top: 20px;
+}
+
+.LinkRobinsWiki-comments-heading {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0 0 16px;
+}
+
+.LinkRobinsWiki-comments-empty {
+    color: var(--muted-color, #888);
+    padding: 8px 0 16px;
+}
+
+.LinkRobinsWiki-commentList {
+    list-style: none;
+    margin: 0 0 16px;
+    padding: 0;
+}
+
+.LinkRobinsWiki-comment {
+    display: flex;
+    gap: 12px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--control-bg, rgba(0,0,0,0.06));
+
+    &:last-child { border-bottom: 0; }
+    &.is-deleted { opacity: 0.7; }
+}
+
+.LinkRobinsWiki-comment-side {
+    flex: 0 0 auto;
+
+    .Avatar { width: 36px; height: 36px; }
+}
+
+.LinkRobinsWiki-comment-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.LinkRobinsWiki-comment-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+    font-size: 0.85rem;
+    color: var(--muted-color, #888);
+}
+
+.LinkRobinsWiki-comment-author {
+    font-weight: 700;
+    color: var(--text-color, inherit);
+
+    a { color: inherit; }
+}
+
+.LinkRobinsWiki-comment-controls {
+    margin-left: auto;
+}
+
+.LinkRobinsWiki-comment-body {
+    line-height: 1.6;
+    word-wrap: break-word;
+
+    > *:first-child { margin-top: 0; }
+    > *:last-child  { margin-bottom: 0; }
+}
+
+.LinkRobinsWiki-comment-deleted {
+    font-style: italic;
+    color: var(--muted-color, #888);
 }

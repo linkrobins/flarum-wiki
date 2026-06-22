@@ -5,12 +5,15 @@ use Flarum\Search\Database\DatabaseSearchDriver;
 use LinkRobins\Wiki\Access;
 use LinkRobins\Wiki\Api\Resource\WikiArticleResource;
 use LinkRobins\Wiki\Api\Resource\WikiCategoryResource;
+use LinkRobins\Wiki\Api\Resource\WikiCommentResource;
 use LinkRobins\Wiki\Api\Resource\WikiRevisionResource;
 use LinkRobins\Wiki\Search\ArticleSearcher;
+use LinkRobins\Wiki\Search\CommentSearcher;
 use LinkRobins\Wiki\Search\Filter as Filters;
 use LinkRobins\Wiki\Search\RevisionSearcher;
 use LinkRobins\Wiki\WikiArticle;
 use LinkRobins\Wiki\WikiCategory;
+use LinkRobins\Wiki\WikiComment;
 use LinkRobins\Wiki\WikiRevision;
 use LinkRobins\Wiki\WikiServiceProvider;
 
@@ -36,10 +39,12 @@ return [
     (new Extend\ApiResource(WikiCategoryResource::class)),
     (new Extend\ApiResource(WikiArticleResource::class)),
     (new Extend\ApiResource(WikiRevisionResource::class)),
+    (new Extend\ApiResource(WikiCommentResource::class)),
 
     (new Extend\Policy())
         ->modelPolicy(WikiArticle::class,  Access\WikiArticlePolicy::class)
         ->modelPolicy(WikiCategory::class, Access\WikiCategoryPolicy::class)
+        ->modelPolicy(WikiComment::class,  Access\WikiCommentPolicy::class)
         ->globalPolicy(Access\GlobalPolicy::class),
 
     (new Extend\ServiceProvider())
@@ -49,7 +54,9 @@ return [
         ->addSearcher(WikiArticle::class, ArticleSearcher::class)
         ->addFilter(ArticleSearcher::class, Filters\CategoryIdFilter::class)
         ->addSearcher(WikiRevision::class, RevisionSearcher::class)
-        ->addFilter(RevisionSearcher::class, Filters\ArticleIdFilter::class),
+        ->addFilter(RevisionSearcher::class, Filters\ArticleIdFilter::class)
+        ->addSearcher(WikiComment::class, CommentSearcher::class)
+        ->addFilter(CommentSearcher::class, Filters\CommentArticleIdFilter::class),
 
     (new Extend\ApiResource(\Flarum\Api\Resource\ForumResource::class))
         ->fields(fn () => [
@@ -79,6 +86,19 @@ return [
                     }
                     try {
                         return $actor->can('editArticles');
+                    } catch (\Throwable $e) {
+                        return false;
+                    }
+                }),
+
+            \Flarum\Api\Schema\Boolean::make('canCommentWiki')
+                ->get(function ($model, \Flarum\Api\Context $context) {
+                    $actor = $context->getActor();
+                    if ($actor->isGuest()) {
+                        return false;
+                    }
+                    try {
+                        return $actor->can('comment');
                     } catch (\Throwable $e) {
                         return false;
                     }

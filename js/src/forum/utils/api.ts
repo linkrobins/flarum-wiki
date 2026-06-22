@@ -34,6 +34,9 @@ export function loadRevisions(articleId: string | number): Promise<any> {
     filter: { articleId },
     page: { limit: 100 },
     include: 'user',
+    // The history view diffs the markdown `content`; skip the rendered
+    // contentHtml so the server doesn't format every revision per load.
+    fields: { 'linkrobins-wiki-revisions': 'title,content,summary,createdAt,user' },
   });
 }
 
@@ -42,6 +45,21 @@ export function loadCategories(): Promise<any> {
     sort: 'position',
     page: { limit: 100 },
   });
+}
+
+export function loadComments(articleId: string | number): Promise<any> {
+  return app.store.find('linkrobins-wiki-comments', {
+    sort: 'createdAt',
+    filter: { articleId },
+    page: { limit: 100 },
+    include: 'user',
+  });
+}
+
+export function postComment(article: any, content: string): Promise<any> {
+  return app.store
+    .createRecord('linkrobins-wiki-comments')
+    .save({ content, relationships: { article } });
 }
 
 // --- Writes (store records: cached, reactive, relationship-aware) --------

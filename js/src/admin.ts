@@ -24,6 +24,15 @@ app.initializers.add('linkrobins-wiki', () => {
       );
       app.registry.registerPermission(
         {
+          permission: 'linkrobins-wiki.comment',
+          icon: 'fas fa-comment',
+          label: tx('linkrobins-wiki.admin.permissions.comment'),
+        },
+        'reply',
+        95
+      );
+      app.registry.registerPermission(
+        {
           permission: 'linkrobins-wiki.editArticles',
           icon: 'fas fa-edit',
           label: tx('linkrobins-wiki.admin.permissions.edit_articles'),

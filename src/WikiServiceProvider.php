@@ -16,6 +16,7 @@ class WikiServiceProvider extends AbstractServiceProvider
         // HTML is produced on demand via formatContent() at serialize time.
         WikiArticle::setFormatter($formatter);
         WikiRevision::setFormatter($formatter);
+        WikiComment::setFormatter($formatter);
 
         // Snapshot the article into the revision history on every save that
         // changes the title or body. The first save records the article as

@@ -4,10 +4,12 @@ import Button from 'flarum/common/components/Button';
 import Dropdown from 'flarum/common/components/Dropdown';
 import PageStructure from 'flarum/forum/components/PageStructure';
 import WikiIndexSidebar from './WikiIndexSidebar';
+import WikiComments from './WikiComments';
 import { tr } from '../utils/translate';
 import { basePath, BASE_PATH, formatDate, userLink, showError } from '../utils/helpers';
 import { canEditWikiArticles } from '../utils/permissions';
 import { loadArticle, loadRevisions } from '../utils/api';
+import { lineDiff, foldContext, hasChanges, DiffLine } from '../utils/diff';
 
 export default class WikiShowPage extends Page {
   loading = true;
@@ -97,6 +99,8 @@ export default class WikiShowPage extends Page {
       m('div', { className: 'LinkRobinsWiki-articleBody Post-body' }, m.trust(article.contentHtml() || '')),
 
       this._renderHistory(article),
+
+      m(WikiComments, { article }),
     ];
   }
 
@@ -105,20 +109,37 @@ export default class WikiShowPage extends Page {
     const editor = article.lastEditedBy && article.lastEditedBy();
     const cat = article.category && article.category();
 
-    return m('div', { className: 'LinkRobinsWiki-byline' }, [
-      cat
-        ? m('a', { className: 'LinkRobinsWiki-byline-cat', href: basePath() + BASE_PATH + '?category=' + encodeURIComponent(cat.id()), style: 'color: ' + (cat.color() || 'inherit') }, cat.name())
-        : null,
-      author ? m('span', { className: 'LinkRobinsWiki-byline-author' }, [tr('show.by', 'By '), userLink(author)]) : null,
-      editor
-        ? m('span', { className: 'LinkRobinsWiki-byline-edited' }, [
-            tr('show.last_edited', 'Last edited by '),
-            userLink(editor),
-            ' ',
-            formatDate(article.lastEditedAt() || article.createdAt()),
-          ])
-        : m('span', { className: 'LinkRobinsWiki-byline-edited' }, formatDate(article.createdAt())),
-    ]);
+    const segments: any[] = [];
+    if (cat) {
+      segments.push(
+        m('a', { className: 'LinkRobinsWiki-byline-cat', href: basePath() + BASE_PATH + '?category=' + encodeURIComponent(cat.id()), style: 'color: ' + (cat.color() || 'inherit') }, cat.name())
+      );
+    }
+    if (author) {
+      segments.push(m('span', { className: 'LinkRobinsWiki-byline-author' }, [tr('show.by', 'by '), userLink(author)]));
+    }
+    if (editor) {
+      segments.push(
+        m('span', { className: 'LinkRobinsWiki-byline-edited' }, [
+          tr('show.last_edited', 'last edited by '),
+          userLink(editor),
+          ' ',
+          formatDate(article.lastEditedAt() || article.createdAt()),
+        ])
+      );
+    } else {
+      segments.push(m('span', { className: 'LinkRobinsWiki-byline-edited' }, formatDate(article.createdAt())));
+    }
+
+    // Interleave with a middot separator so the segments stay on one tidy line
+    // with consistent spacing (no run-together names, no oversized gaps).
+    const out: any[] = [];
+    segments.forEach((seg, i) => {
+      if (i > 0) out.push(m('span', { className: 'LinkRobinsWiki-byline-sep' }, '·'));
+      out.push(seg);
+    });
+
+    return m('div', { className: 'LinkRobinsWiki-byline' }, out);
   }
 
   _renderControls(article: any) {
@@ -208,14 +229,16 @@ export default class WikiShowPage extends Page {
     return m(
       'ul',
       { className: 'LinkRobinsWiki-revisions' },
-      this.revisions.map((rev: any) => this._renderRevision(rev))
+      this.revisions.map((rev: any, idx: number) => this._renderRevision(rev, idx))
     );
   }
 
-  _renderRevision(rev: any) {
+  _renderRevision(rev: any, idx: number) {
     const editor = rev.user && rev.user();
     const id = String(rev.id());
     const expanded = this.expandedRevision === id;
+    // Revisions are newest-first, so the older version is the next item.
+    const prev = this.revisions ? this.revisions[idx + 1] : null;
 
     return m('li', { className: 'LinkRobinsWiki-revision', key: 'rev-' + id }, [
       m(
@@ -228,12 +251,60 @@ export default class WikiShowPage extends Page {
           },
         },
         [
+          m('i', { className: 'fas fa-' + (expanded ? 'caret-down' : 'caret-right') + ' LinkRobinsWiki-revision-caret' }),
           m('span', { className: 'LinkRobinsWiki-revision-date' }, formatDate(rev.createdAt())),
           editor ? m('span', { className: 'LinkRobinsWiki-revision-user' }, editor.displayName() || editor.username()) : null,
+          !prev ? m('span', { className: 'LinkRobinsWiki-revision-tag' }, tr('show.initial_version', 'created')) : null,
           rev.summary && rev.summary() ? m('span', { className: 'LinkRobinsWiki-revision-summary' }, rev.summary()) : null,
         ]
       ),
-      expanded ? m('div', { className: 'LinkRobinsWiki-revision-body Post-body' }, m.trust(rev.contentHtml() || '')) : null,
+      expanded ? this._renderDiff(rev, prev) : null,
+    ]);
+  }
+
+  _renderDiff(rev: any, prev: any) {
+    const newText = (rev.content && rev.content()) || '';
+    const oldText = prev ? (prev.content && prev.content()) || '' : '';
+    const newTitle = rev.title ? rev.title() : '';
+    const oldTitle = prev && prev.title ? prev.title() : null;
+    const titleChanged = prev && oldTitle !== newTitle;
+
+    const diff = foldContext(lineDiff(oldText, newText));
+    const bodyChanged = hasChanges(diff);
+
+    const parts: any[] = [
+      m('div', { className: 'LinkRobinsWiki-diff-label' }, prev ? tr('show.diff_from_previous', 'Changes from the previous version') : tr('show.diff_initial', 'Initial version')),
+    ];
+
+    if (titleChanged) {
+      parts.push(
+        m('div', { className: 'LinkRobinsWiki-diff-titleChange' }, [
+          m('span', { className: 'LinkRobinsWiki-diff-titleLabel' }, tr('show.diff_title', 'Title')),
+          m('span', { className: 'LinkRobinsWiki-diff-del' }, oldTitle),
+          m('i', { className: 'fas fa-arrow-right' }),
+          m('span', { className: 'LinkRobinsWiki-diff-add' }, newTitle),
+        ])
+      );
+    }
+
+    if (bodyChanged) {
+      parts.push(m('div', { className: 'LinkRobinsWiki-diff' }, diff.map((l) => this._renderDiffLine(l))));
+    } else if (!titleChanged) {
+      parts.push(m('div', { className: 'LinkRobinsWiki-diff-none' }, tr('show.diff_none', 'No content changes.')));
+    }
+
+    return m('div', { className: 'LinkRobinsWiki-revisionDiff' }, parts);
+  }
+
+  _renderDiffLine(line: DiffLine) {
+    if (line.type === 'fold') {
+      return m('div', { className: 'LinkRobinsWiki-diff-fold' }, '⋯');
+    }
+    const cls = line.type === 'add' ? 'is-add' : line.type === 'del' ? 'is-del' : 'is-eq';
+    const sign = line.type === 'add' ? '+' : line.type === 'del' ? '−' : ' ';
+    return m('div', { className: 'LinkRobinsWiki-diff-line ' + cls }, [
+      m('span', { className: 'LinkRobinsWiki-diff-sign' }, sign),
+      m('span', { className: 'LinkRobinsWiki-diff-text' }, line.text || ' '),
     ]);
   }
 

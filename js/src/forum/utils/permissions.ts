@@ -28,3 +28,13 @@ export function canEditWikiArticles(): boolean {
     return false;
   }
 }
+
+export function canCommentWiki(): boolean {
+  try {
+    if (!app.session || !app.session.user) return false;
+    if (isAdmin()) return true;
+    return !!readForumAttribute('canCommentWiki');
+  } catch (e) {
+    return false;
+  }
+}
