@@ -54,9 +54,3 @@ Three tables:
 ## License
 
 MIT.
-
-[upl-image-preview uuid=5064b37a-358f-4c4c-ba41-a485c94eb521 url=https://cdn.discuss.flarum.org/2026-06-23/1782173503-462941-image.png alt=image.png thumbnail_url=https://cdn.discuss.flarum.org/2026-06-23/1782173503-462941-image-thumb.webp]
-[upl-image-preview uuid=526e8a44-6cb6-4438-9f69-4c9de492bc8e url=https://cdn.discuss.flarum.org/2026-06-23/1782173517-703183-image.png alt=image.png thumbnail_url=https://cdn.discuss.flarum.org/2026-06-23/1782173517-703183-image-thumb.webp]
-[upl-image-preview uuid=67733ce6-19cd-4c7a-b0cb-ef203ba17a31 url=https://cdn.discuss.flarum.org/2026-06-23/1782173596-932886-image.png alt=image.png thumbnail_url=https://cdn.discuss.flarum.org/2026-06-23/1782173596-932886-image-thumb.webp]
-[upl-image-preview uuid=8395ba3a-0ba8-4a1e-9bfb-287537d9ffac url=https://cdn.discuss.flarum.org/2026-06-23/1782173607-766841-image.png alt=image.png thumbnail_url=https://cdn.discuss.flarum.org/2026-06-23/1782173607-766841-image-thumb.webp]
-[upl-image-preview uuid=bbf33f77-0531-45b9-8c4e-255fd5775dc0 url=https://cdn.discuss.flarum.org/2026-06-23/1782173631-134794-image.png alt=image.png thumbnail_url=https://cdn.discuss.flarum.org/2026-06-23/1782173631-134794-image-thumb.webp]
