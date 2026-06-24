@@ -10,6 +10,7 @@ use Flarum\Api\Sort\SortColumn;
 use Illuminate\Database\Eloquent\Builder;
 use LinkRobins\Wiki\Access\WikiAbilities;
 use LinkRobins\Wiki\WikiRevision;
+use Psr\Log\LoggerInterface;
 use Tobyz\JsonApiServer\Context;
 
 /**
@@ -19,6 +20,11 @@ use Tobyz\JsonApiServer\Context;
  */
 class WikiRevisionResource extends AbstractDatabaseResource
 {
+    public function __construct(
+        protected LoggerInterface $log,
+    ) {
+    }
+
     public function type(): string
     {
         return 'linkrobins-wiki-revisions';
@@ -68,7 +74,7 @@ class WikiRevisionResource extends AbstractDatabaseResource
                     try {
                         return $revision->formatContent($context->request);
                     } catch (\Throwable $e) {
-                        resolve(\Psr\Log\LoggerInterface::class)->warning('[linkrobins/wiki] formatContent failed', ['exception' => $e]);
+                        $this->log->warning('[linkrobins/wiki] formatContent failed', ['exception' => $e]);
                         return '';
                     }
                 }),

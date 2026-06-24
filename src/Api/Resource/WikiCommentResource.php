@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
 use LinkRobins\Wiki\Access\WikiAbilities;
 use LinkRobins\Wiki\WikiArticle;
 use LinkRobins\Wiki\WikiComment;
+use Psr\Log\LoggerInterface;
 use Tobyz\JsonApiServer\Context;
 use Tobyz\JsonApiServer\Exception\BadRequestException;
 use Tobyz\JsonApiServer\Exception\ForbiddenException;
@@ -21,6 +22,7 @@ class WikiCommentResource extends AbstractDatabaseResource
 {
     public function __construct(
         protected TranslatorInterface $translator,
+        protected LoggerInterface $log,
     ) {
     }
 
@@ -91,7 +93,7 @@ class WikiCommentResource extends AbstractDatabaseResource
                     try {
                         return $comment->formatContent($context->request);
                     } catch (\Throwable $e) {
-                        resolve(\Psr\Log\LoggerInterface::class)->warning('[linkrobins/wiki] formatContent failed', ['exception' => $e]);
+                        $this->log->warning('[linkrobins/wiki] formatContent failed', ['exception' => $e]);
                         return '';
                     }
                 }),

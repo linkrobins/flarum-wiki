@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
 use LinkRobins\Wiki\Access\WikiAbilities;
 use LinkRobins\Wiki\WikiArticle;
 use LinkRobins\Wiki\WikiCategory;
+use Psr\Log\LoggerInterface;
 use Tobyz\JsonApiServer\Context;
 use Tobyz\JsonApiServer\Exception\BadRequestException;
 
@@ -20,6 +21,7 @@ class WikiArticleResource extends AbstractDatabaseResource
 {
     public function __construct(
         protected TranslatorInterface $translator,
+        protected LoggerInterface $log,
     ) {
     }
 
@@ -104,7 +106,7 @@ class WikiArticleResource extends AbstractDatabaseResource
                     try {
                         return $article->formatContent($context->request);
                     } catch (\Throwable $e) {
-                        resolve(\Psr\Log\LoggerInterface::class)->warning('[linkrobins/wiki] formatContent failed', ['exception' => $e]);
+                        $this->log->warning('[linkrobins/wiki] formatContent failed', ['exception' => $e]);
                         return '';
                     }
                 }),
@@ -253,6 +255,13 @@ class WikiArticleResource extends AbstractDatabaseResource
 
     protected function assertContent(object $model): void
     {
+        $title = $model->getAttribute('title');
+        if (! is_string($title) || trim($title) === '') {
+            throw new BadRequestException(
+                $this->translator->trans('linkrobins-wiki.api.title_required')
+            );
+        }
+
         $content = $model->getAttribute('content');
         if (! is_string($content) || trim(strip_tags($content)) === '') {
             throw new BadRequestException(
