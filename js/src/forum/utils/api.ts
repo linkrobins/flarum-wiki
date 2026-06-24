@@ -6,6 +6,11 @@ function apiUrl(): string {
   return app.forum.attribute('apiUrl');
 }
 
+// Server caps both the comment and revision Index endpoints at 100 per page;
+// we request a full page and let the caller page through with an offset rather
+// than silently dropping everything past the first 100.
+export const WIKI_PAGE_LIMIT = 100;
+
 // --- Reads (cached + relationship-resolved via the store) ---------------
 
 export function loadArticles(params?: Record<string, any>): Promise<any> {
@@ -28,11 +33,11 @@ export function loadArticle(id: string | number): Promise<WikiArticle> {
   });
 }
 
-export function loadRevisions(articleId: string | number): Promise<any> {
+export function loadRevisions(articleId: string | number, offset = 0): Promise<any> {
   return app.store.find('linkrobins-wiki-revisions', {
     sort: '-createdAt',
     filter: { articleId },
-    page: { limit: 100 },
+    page: { limit: WIKI_PAGE_LIMIT, offset },
     include: 'user',
     // The history view diffs the markdown `content`; skip the rendered
     // contentHtml so the server doesn't format every revision per load.
@@ -47,11 +52,11 @@ export function loadCategories(): Promise<any> {
   });
 }
 
-export function loadComments(articleId: string | number): Promise<any> {
+export function loadComments(articleId: string | number, offset = 0): Promise<any> {
   return app.store.find('linkrobins-wiki-comments', {
     sort: 'createdAt',
     filter: { articleId },
-    page: { limit: 100 },
+    page: { limit: WIKI_PAGE_LIMIT, offset },
     include: 'user',
   });
 }

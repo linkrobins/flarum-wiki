@@ -8,7 +8,7 @@ import WikiComments from './WikiComments';
 import { tr } from '../utils/translate';
 import { basePath, BASE_PATH, formatDate, userLink, showError } from '../utils/helpers';
 import { canEditWikiArticles } from '../utils/permissions';
-import { loadArticle, loadRevisions } from '../utils/api';
+import { loadArticle, loadRevisions, WIKI_PAGE_LIMIT } from '../utils/api';
 import { lineDiff, foldContext, hasChanges, DiffLine } from '../utils/diff';
 
 export default class WikiShowPage extends Page {
@@ -19,6 +19,8 @@ export default class WikiShowPage extends Page {
   historyOpen = false;
   revisions: any[] | null = null;
   revisionsLoading = false;
+  revisionsLoadingMore = false;
+  revisionsHasMore = false;
   expandedRevision: string | null = null;
 
   oninit(vnode: any) {
@@ -38,6 +40,7 @@ export default class WikiShowPage extends Page {
     this.loading = true;
     this.error = null;
     this.revisions = null;
+    this.revisionsHasMore = false;
     this.historyOpen = false;
     m.redraw();
 
@@ -198,7 +201,7 @@ export default class WikiShowPage extends Page {
         },
         tr('show.history', 'History ({count})', { count })
       ),
-      this.historyOpen ? this._renderRevisions() : null,
+      this.historyOpen ? this._renderRevisions(article) : null,
     ]);
   }
 
@@ -209,6 +212,7 @@ export default class WikiShowPage extends Page {
       loadRevisions(article.id())
         .then((revs: any[]) => {
           this.revisions = revs || [];
+          this.revisionsHasMore = this.revisions.length >= WIKI_PAGE_LIMIT;
           this.revisionsLoading = false;
           m.redraw();
         })
@@ -220,18 +224,49 @@ export default class WikiShowPage extends Page {
     }
   }
 
-  _renderRevisions() {
+  _loadMoreRevisions(article: any) {
+    if (this.revisionsLoadingMore || !this.revisionsHasMore || this.revisions === null) return;
+    this.revisionsLoadingMore = true;
+    loadRevisions(article.id(), this.revisions.length)
+      .then((revs: any[]) => {
+        const page = revs || [];
+        const seen = new Set((this.revisions || []).map((r: any) => String(r.id())));
+        this.revisions = (this.revisions || []).concat(page.filter((r: any) => !seen.has(String(r.id()))));
+        this.revisionsHasMore = page.length >= WIKI_PAGE_LIMIT;
+        this.revisionsLoadingMore = false;
+        m.redraw();
+      })
+      .catch(() => {
+        this.revisionsLoadingMore = false;
+        m.redraw();
+      });
+  }
+
+  _renderRevisions(article: any) {
     if (this.revisionsLoading || this.revisions === null) {
       return m(LoadingIndicator, { display: 'inline' });
     }
     if (!this.revisions.length) {
       return m('div', { className: 'LinkRobinsWiki-empty' }, tr('show.no_history', 'No revisions yet.'));
     }
-    return m(
-      'ul',
-      { className: 'LinkRobinsWiki-revisions' },
-      this.revisions.map((rev: any, idx: number) => this._renderRevision(rev, idx))
-    );
+    return [
+      m(
+        'ul',
+        { className: 'LinkRobinsWiki-revisions' },
+        this.revisions.map((rev: any, idx: number) => this._renderRevision(rev, idx))
+      ),
+      this.revisionsHasMore
+        ? m('div', { className: 'LinkRobinsWiki-history-loadMore' }, m(
+            Button,
+            {
+              className: 'Button Button--text',
+              loading: this.revisionsLoadingMore,
+              onclick: () => this._loadMoreRevisions(article),
+            },
+            tr('show.load_more_history', 'Load older revisions')
+          ))
+        : null,
+    ];
   }
 
   _renderRevision(rev: any, idx: number) {

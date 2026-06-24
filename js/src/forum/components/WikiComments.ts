@@ -6,7 +6,7 @@ import Dropdown from 'flarum/common/components/Dropdown';
 import { tr } from '../utils/translate';
 import { formatDate, userLink, showError } from '../utils/helpers';
 import { canCommentWiki } from '../utils/permissions';
-import { loadComments, postComment } from '../utils/api';
+import { loadComments, postComment, WIKI_PAGE_LIMIT } from '../utils/api';
 import { wikiComposerAvailable, wikiComposerOpenFor, openWikiComposer, wikiComposerPreview } from '../utils/composer';
 
 /**
@@ -18,6 +18,8 @@ export default class WikiComments extends Component {
   article: any = null;
   comments: any[] = [];
   loading = true;
+  loadingMore = false;
+  hasMore = false;
 
   oninit(vnode: any) {
     super.oninit(vnode);
@@ -37,9 +39,11 @@ export default class WikiComments extends Component {
 
   _load() {
     this.loading = true;
+    this.hasMore = false;
     loadComments(this.article.id())
       .then((comments: any[]) => {
         this.comments = comments || [];
+        this.hasMore = this.comments.length >= WIKI_PAGE_LIMIT;
         this.loading = false;
         m.redraw();
       })
@@ -50,12 +54,47 @@ export default class WikiComments extends Component {
       });
   }
 
+  _loadMore() {
+    if (this.loadingMore || !this.hasMore) return;
+    this.loadingMore = true;
+    loadComments(this.article.id(), this.comments.length)
+      .then((more: any[]) => {
+        const page = more || [];
+        // Dedup by id when appending so a concurrently-posted comment can't
+        // produce a duplicate Mithril key.
+        const seen = new Set(this.comments.map((c: any) => String(c.id())));
+        this.comments = this.comments.concat(page.filter((c: any) => !seen.has(String(c.id()))));
+        this.hasMore = page.length >= WIKI_PAGE_LIMIT;
+        this.loadingMore = false;
+        m.redraw();
+      })
+      .catch((err: any) => {
+        this.loadingMore = false;
+        console.error('[linkrobins/wiki] more comments load failed:', err);
+        m.redraw();
+      });
+  }
+
   view() {
     return m('section', { className: 'LinkRobinsWiki-comments' }, [
       m('h3', { className: 'LinkRobinsWiki-comments-heading' }, tr('comments.heading', 'Comments ({count})', { count: this.comments.length })),
       this.loading ? m(LoadingIndicator, { display: 'inline' }) : this._renderList(),
+      this._renderLoadMore(),
       this._renderForm(),
     ]);
+  }
+
+  _renderLoadMore() {
+    if (this.loading || !this.hasMore) return null;
+    return m('div', { className: 'LinkRobinsWiki-comments-loadMore' }, m(
+      Button,
+      {
+        className: 'Button Button--text',
+        loading: this.loadingMore,
+        onclick: () => this._loadMore(),
+      },
+      tr('comments.load_more', 'Load more comments')
+    ));
   }
 
   _renderList() {
