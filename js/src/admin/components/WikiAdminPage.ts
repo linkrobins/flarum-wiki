@@ -29,12 +29,7 @@ export default class WikiAdminPage extends ExtensionPage {
 
   content() {
     return m('div', { className: 'ExtensionPage-settings' }, [
-      m('div', { className: 'container' }, [
-        m('div', { className: 'LinkRobinsWikiAdmin' }, [
-          this._renderIndexLayout(),
-          this._renderCategories(),
-        ]),
-      ]),
+      m('div', { className: 'container' }, [m('div', { className: 'LinkRobinsWikiAdmin' }, [this._renderIndexLayout(), this._renderCategories()])]),
     ]);
   }
 
@@ -96,33 +91,39 @@ export default class WikiAdminPage extends ExtensionPage {
     }
 
     return m('table', { className: 'LinkRobinsWikiAdmin-table' }, [
-      m('thead', m('tr', [
-        m('th', t('linkrobins-wiki.admin.categories.column_name')),
-        m('th', t('linkrobins-wiki.admin.categories.column_slug')),
-        m('th', t('linkrobins-wiki.admin.categories.column_articles')),
-        m('th'),
-      ])),
-      m('tbody', this.categories.map((cat: any) => m('tr', { key: 'cat-' + cat.id() }, [
-        m('td', [
-          cat.icon() ? m('i', { className: cat.icon(), style: 'color: ' + (cat.color() || 'inherit') }) : null,
-          ' ',
-          cat.name(),
-        ]),
-        m('td', m('code', cat.slug())),
-        m('td', String(cat.articleCount ? cat.articleCount() : 0)),
-        m('td', { className: 'LinkRobinsWikiAdmin-rowActions' },
-          m(
-            Button,
-            {
-              className: 'Button',
-              icon: 'fas fa-pencil-alt',
-              title: t('linkrobins-wiki.admin.categories.edit_button'),
-              onclick: () => this._openEditor(cat),
-            },
-            t('linkrobins-wiki.admin.categories.edit_button')
-          )
-        ),
-      ]))),
+      m(
+        'thead',
+        m('tr', [
+          m('th', t('linkrobins-wiki.admin.categories.column_name')),
+          m('th', t('linkrobins-wiki.admin.categories.column_slug')),
+          m('th', t('linkrobins-wiki.admin.categories.column_articles')),
+          m('th'),
+        ])
+      ),
+      m(
+        'tbody',
+        this.categories.map((cat: any) =>
+          m('tr', { key: 'cat-' + cat.id() }, [
+            m('td', [cat.icon() ? m('i', { className: cat.icon(), style: 'color: ' + (cat.color() || 'inherit') }) : null, ' ', cat.name()]),
+            m('td', m('code', cat.slug())),
+            m('td', String(cat.articleCount ? cat.articleCount() : 0)),
+            m(
+              'td',
+              { className: 'LinkRobinsWikiAdmin-rowActions' },
+              m(
+                Button,
+                {
+                  className: 'Button',
+                  icon: 'fas fa-pencil-alt',
+                  title: t('linkrobins-wiki.admin.categories.edit_button'),
+                  onclick: () => this._openEditor(cat),
+                },
+                t('linkrobins-wiki.admin.categories.edit_button')
+              )
+            ),
+          ])
+        )
+      ),
     ]);
   }
 

@@ -86,22 +86,30 @@ export default class WikiComments extends Component {
 
   _renderLoadMore() {
     if (this.loading || !this.hasMore) return null;
-    return m('div', { className: 'LinkRobinsWiki-comments-loadMore' }, m(
-      Button,
-      {
-        className: 'Button Button--text',
-        loading: this.loadingMore,
-        onclick: () => this._loadMore(),
-      },
-      tr('comments.load_more', 'Load more comments')
-    ));
+    return m(
+      'div',
+      { className: 'LinkRobinsWiki-comments-loadMore' },
+      m(
+        Button,
+        {
+          className: 'Button Button--text',
+          loading: this.loadingMore,
+          onclick: () => this._loadMore(),
+        },
+        tr('comments.load_more', 'Load more comments')
+      )
+    );
   }
 
   _renderList() {
     if (!this.comments.length) {
       return m('div', { className: 'LinkRobinsWiki-comments-empty' }, tr('comments.empty', 'No comments yet.'));
     }
-    return m('ul', { className: 'LinkRobinsWiki-commentList' }, this.comments.map((c: any) => this._renderComment(c)));
+    return m(
+      'ul',
+      { className: 'LinkRobinsWiki-commentList' },
+      this.comments.map((c: any) => this._renderComment(c))
+    );
   }
 
   _renderComment(comment: any) {
@@ -142,18 +150,26 @@ export default class WikiComments extends Component {
     }
     if (!menu.length) return null;
 
-    return m(Dropdown, { className: 'LinkRobinsWiki-comment-controls', icon: 'fas fa-ellipsis-h', buttonClassName: 'Button Button--icon Button--flat' }, menu);
+    return m(
+      Dropdown,
+      { className: 'LinkRobinsWiki-comment-controls', icon: 'fas fa-ellipsis-h', buttonClassName: 'Button Button--icon Button--flat' },
+      menu
+    );
   }
 
   _renderForm() {
     if (!canCommentWiki()) return null;
 
     if (wikiComposerAvailable()) {
-      return m('div', { className: 'LinkRobinsWiki-comments-form' }, wikiComposerPreview({
-        composing: wikiComposerOpenFor(this._newContext()),
-        placeholder: tr('comments.placeholder', 'Write a comment…'),
-        onclick: () => this._openComposer(),
-      }));
+      return m(
+        'div',
+        { className: 'LinkRobinsWiki-comments-form' },
+        wikiComposerPreview({
+          composing: wikiComposerOpenFor(this._newContext()),
+          placeholder: tr('comments.placeholder', 'Write a comment…'),
+          onclick: () => this._openComposer(),
+        })
+      );
     }
 
     return m('div', { className: 'LinkRobinsWiki-comments-form' }, [
@@ -162,7 +178,9 @@ export default class WikiComments extends Component {
         rows: 3,
         placeholder: tr('comments.placeholder', 'Write a comment…'),
         value: this._fallbackBody || '',
-        oninput: (e: any) => { this._fallbackBody = e.target.value; },
+        oninput: (e: any) => {
+          this._fallbackBody = e.target.value;
+        },
       }),
       m(Button, { className: 'Button Button--primary', onclick: () => this._submit(this._fallbackBody || '') }, tr('comments.post', 'Post comment')),
     ]);
@@ -237,11 +255,17 @@ export default class WikiComments extends Component {
 
   _softDelete(comment: any) {
     if (!confirm(tr('comments.confirm_delete', 'Delete this comment?'))) return;
-    comment.save({ isDeleted: true }).then(() => m.redraw()).catch(() => showError(tr('comments.error_delete', 'Could not delete the comment.')));
+    comment
+      .save({ isDeleted: true })
+      .then(() => m.redraw())
+      .catch(() => showError(tr('comments.error_delete', 'Could not delete the comment.')));
   }
 
   _restore(comment: any) {
-    comment.save({ isDeleted: false }).then(() => m.redraw()).catch(() => showError(tr('comments.error_delete', 'Could not restore the comment.')));
+    comment
+      .save({ isDeleted: false })
+      .then(() => m.redraw())
+      .catch(() => showError(tr('comments.error_delete', 'Could not restore the comment.')));
   }
 
   _deleteForever(comment: any) {

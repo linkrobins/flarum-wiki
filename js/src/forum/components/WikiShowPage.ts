@@ -116,7 +116,15 @@ export default class WikiShowPage extends Page {
     const segments: any[] = [];
     if (cat) {
       segments.push(
-        m('a', { className: 'LinkRobinsWiki-byline-cat', href: basePath() + BASE_PATH + '?category=' + encodeURIComponent(cat.id()), style: 'color: ' + (cat.color() || 'inherit') }, cat.name())
+        m(
+          'a',
+          {
+            className: 'LinkRobinsWiki-byline-cat',
+            href: basePath() + BASE_PATH + '?category=' + encodeURIComponent(cat.id()),
+            style: 'color: ' + (cat.color() || 'inherit'),
+          },
+          cat.name()
+        )
       );
     }
     if (author) {
@@ -179,9 +187,7 @@ export default class WikiShowPage extends Page {
             tr('action.edit', 'Edit')
           )
         : null,
-      menu.length
-        ? m(Dropdown, { className: 'Dropdown--icon', icon: 'fas fa-ellipsis-h', buttonClassName: 'Button Button--icon' }, menu)
-        : null,
+      menu.length ? m(Dropdown, { className: 'Dropdown--icon', icon: 'fas fa-ellipsis-h', buttonClassName: 'Button Button--icon' }, menu) : null,
     ]);
   }
 
@@ -256,15 +262,19 @@ export default class WikiShowPage extends Page {
         this.revisions.map((rev: any, idx: number) => this._renderRevision(rev, idx))
       ),
       this.revisionsHasMore
-        ? m('div', { className: 'LinkRobinsWiki-history-loadMore' }, m(
-            Button,
-            {
-              className: 'Button Button--text',
-              loading: this.revisionsLoadingMore,
-              onclick: () => this._loadMoreRevisions(article),
-            },
-            tr('show.load_more_history', 'Load older revisions')
-          ))
+        ? m(
+            'div',
+            { className: 'LinkRobinsWiki-history-loadMore' },
+            m(
+              Button,
+              {
+                className: 'Button Button--text',
+                loading: this.revisionsLoadingMore,
+                onclick: () => this._loadMoreRevisions(article),
+              },
+              tr('show.load_more_history', 'Load older revisions')
+            )
+          )
         : null,
     ];
   }
@@ -309,7 +319,11 @@ export default class WikiShowPage extends Page {
     const bodyChanged = hasChanges(diff);
 
     const parts: any[] = [
-      m('div', { className: 'LinkRobinsWiki-diff-label' }, prev ? tr('show.diff_from_previous', 'Changes from the previous version') : tr('show.diff_initial', 'Initial version')),
+      m(
+        'div',
+        { className: 'LinkRobinsWiki-diff-label' },
+        prev ? tr('show.diff_from_previous', 'Changes from the previous version') : tr('show.diff_initial', 'Initial version')
+      ),
     ];
 
     if (titleChanged) {
@@ -324,7 +338,13 @@ export default class WikiShowPage extends Page {
     }
 
     if (bodyChanged) {
-      parts.push(m('div', { className: 'LinkRobinsWiki-diff' }, diff.map((l) => this._renderDiffLine(l))));
+      parts.push(
+        m(
+          'div',
+          { className: 'LinkRobinsWiki-diff' },
+          diff.map((l) => this._renderDiffLine(l))
+        )
+      );
     } else if (!titleChanged) {
       parts.push(m('div', { className: 'LinkRobinsWiki-diff-none' }, tr('show.diff_none', 'No content changes.')));
     }

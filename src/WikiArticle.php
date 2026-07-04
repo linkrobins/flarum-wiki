@@ -10,6 +10,23 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property int $id
+ * @property int|null $category_id
+ * @property int|null $user_id
+ * @property int|null $last_edited_by_user_id
+ * @property string $title
+ * @property string $content
+ * @property \Carbon\Carbon|null $last_edited_at
+ * @property \Carbon\Carbon|null $deleted_at
+ * @property \Carbon\Carbon|null $created_at
+ * @property \Carbon\Carbon|null $updated_at
+ * @property-read int|null $revision_count
+ * @property-read WikiCategory|null $category
+ * @property-read User|null $user
+ * @property-read User|null $lastEditedBy
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, WikiRevision> $revisions
+ */
 class WikiArticle extends AbstractModel implements Formattable
 {
     use HasFormattedContent;
@@ -31,6 +48,7 @@ class WikiArticle extends AbstractModel implements Formattable
         'last_edited_at' => 'datetime',
     ];
 
+    /** @var list<string> */
     protected $dates = [
         'deleted_at',
     ];

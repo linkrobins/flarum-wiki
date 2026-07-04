@@ -13,6 +13,16 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * A reader comment on an article. Distinct from a revision: revisions are the
  * article's edit history, comments are conversation about it. Soft-deletable so
  * editors can moderate without losing the thread.
+ *
+ * @property int $id
+ * @property int $article_id
+ * @property int|null $user_id
+ * @property string $content
+ * @property \Carbon\Carbon|null $deleted_at
+ * @property \Carbon\Carbon|null $created_at
+ * @property \Carbon\Carbon|null $updated_at
+ * @property-read WikiArticle|null $article
+ * @property-read User|null $user
  */
 class WikiComment extends AbstractModel implements Formattable
 {
@@ -29,6 +39,7 @@ class WikiComment extends AbstractModel implements Formattable
         'content',
     ];
 
+    /** @var list<string> */
     protected $dates = [
         'deleted_at',
     ];

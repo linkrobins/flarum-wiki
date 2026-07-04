@@ -43,6 +43,7 @@ class WikiCommentResource extends AbstractDatabaseResource
      */
     public function scope(Builder $query, Context $context): void
     {
+        /** @var \Illuminate\Database\Eloquent\Builder<WikiComment> $query */
         if (WikiAbilities::isEditor($context->getActor())) {
             $query->withTrashed();
         }
@@ -163,6 +164,7 @@ class WikiCommentResource extends AbstractDatabaseResource
 
     public function creating(object $model, Context $context): ?object
     {
+        /** @var WikiComment $model */
         $actor = $context->getActor();
 
         $this->assertContent($model);
@@ -186,12 +188,16 @@ class WikiCommentResource extends AbstractDatabaseResource
 
     public function updating(object $model, Context $context): ?object
     {
+        /** @var WikiComment $model */
         // Block author / article tampering on update.
-        foreach (['user_id', 'article_id'] as $immutable) {
-            $original = $model->getOriginal($immutable);
-            if ((int) $model->$immutable !== (int) $original) {
-                $model->$immutable = $original;
-            }
+        $originalUserId = $model->getOriginal('user_id');
+        if ((int) $model->user_id !== (int) $originalUserId) {
+            $model->user_id = $originalUserId;
+        }
+
+        $originalArticleId = $model->getOriginal('article_id');
+        if ((int) $model->article_id !== (int) $originalArticleId) {
+            $model->article_id = $originalArticleId;
         }
 
         if ($model->isDirty('content')) {
@@ -203,6 +209,7 @@ class WikiCommentResource extends AbstractDatabaseResource
 
     public function deleting(object $model, Context $context): void
     {
+        /** @var WikiComment $model */
         if ($model->deleted_at === null) {
             throw new BadRequestException(
                 $this->translator->trans('linkrobins-wiki.api.comment_soft_delete_first')

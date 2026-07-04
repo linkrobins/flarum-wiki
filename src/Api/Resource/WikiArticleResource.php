@@ -43,6 +43,7 @@ class WikiArticleResource extends AbstractDatabaseResource
      */
     public function scope(Builder $query, Context $context): void
     {
+        /** @var \Illuminate\Database\Eloquent\Builder<WikiArticle> $query */
         $query->withCount('revisions as revision_count');
 
         if (WikiAbilities::isEditor($context->getActor())) {
@@ -194,6 +195,7 @@ class WikiArticleResource extends AbstractDatabaseResource
 
     public function creating(object $model, Context $context): ?object
     {
+        /** @var WikiArticle $model */
         $actor = $context->getActor();
 
         // Force authorship to the acting user -- never trust relationships.user
@@ -218,6 +220,7 @@ class WikiArticleResource extends AbstractDatabaseResource
 
     public function updating(object $model, Context $context): ?object
     {
+        /** @var WikiArticle $model */
         // Block author tampering on update.
         $originalUserId = $model->getOriginal('user_id');
         if ((int) $model->user_id !== (int) $originalUserId) {
@@ -244,6 +247,7 @@ class WikiArticleResource extends AbstractDatabaseResource
      */
     public function deleting(object $model, Context $context): void
     {
+        /** @var WikiArticle $model */
         if ($model->deleted_at === null) {
             throw new BadRequestException(
                 $this->translator->trans('linkrobins-wiki.api.article_soft_delete_first')

@@ -151,7 +151,11 @@ export default class WikiIndexPage extends Page {
   _renderBody() {
     // Custom homepage layout (only when no category filter is active).
     if (!this.category && this.blocks.length) {
-      return m('div', { className: 'LinkRobinsWiki-home' }, this.blocks.map((b, i) => this._renderBlock(b, i)));
+      return m(
+        'div',
+        { className: 'LinkRobinsWiki-home' },
+        this.blocks.map((b, i) => this._renderBlock(b, i))
+      );
     }
 
     return [this._renderHeader(), this._renderList(this.articles)];
@@ -225,11 +229,12 @@ export default class WikiIndexPage extends Page {
             onclick: (e: any) => safeNavigate(href, e),
           },
           [
-            m('i', { className: (cat.icon() || 'fas fa-folder') + ' LinkRobinsWiki-categoryCard-icon', style: 'color: ' + (cat.color() || 'inherit') }),
+            m('i', {
+              className: (cat.icon() || 'fas fa-folder') + ' LinkRobinsWiki-categoryCard-icon',
+              style: 'color: ' + (cat.color() || 'inherit'),
+            }),
             m('span', { className: 'LinkRobinsWiki-categoryCard-name' }, cat.name()),
-            cat.description && cat.description()
-              ? m('span', { className: 'LinkRobinsWiki-categoryCard-desc' }, cat.description())
-              : null,
+            cat.description && cat.description() ? m('span', { className: 'LinkRobinsWiki-categoryCard-desc' }, cat.description()) : null,
           ]
         );
       })
@@ -279,14 +284,10 @@ export default class WikiIndexPage extends Page {
         m('div', { className: 'LinkRobinsWiki-row-main' }, [
           m('div', { className: 'LinkRobinsWiki-row-subject' }, [
             article.title() || tr('index.untitled', 'Untitled'),
-            isDeleted
-              ? m('span', { className: 'LinkRobinsWiki-row-deletedBadge' }, tr('index.deleted_badge', 'Deleted'))
-              : null,
+            isDeleted ? m('span', { className: 'LinkRobinsWiki-row-deletedBadge' }, tr('index.deleted_badge', 'Deleted')) : null,
           ]),
           m('div', { className: 'LinkRobinsWiki-row-meta' }, [
-            cat
-              ? m('span', { className: 'LinkRobinsWiki-row-cat', style: 'color: ' + (cat.color() || 'inherit') }, cat.name())
-              : null,
+            cat ? m('span', { className: 'LinkRobinsWiki-row-cat', style: 'color: ' + (cat.color() || 'inherit') }, cat.name()) : null,
             user ? m('span', { className: 'LinkRobinsWiki-row-user' }, user.displayName() || user.username()) : null,
             m('span', { className: 'LinkRobinsWiki-row-date' }, formatDate(article.lastEditedAt() || article.createdAt())),
           ]),

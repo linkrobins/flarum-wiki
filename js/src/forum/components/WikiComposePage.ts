@@ -127,7 +127,9 @@ export default class WikiComposePage extends Page {
             value: this.title,
             disabled: this.saving,
             placeholder: tr('compose.title_placeholder', 'Article title'),
-            oninput: (e: any) => { this.title = e.target.value; },
+            oninput: (e: any) => {
+              this.title = e.target.value;
+            },
           }),
         ]),
 
@@ -138,7 +140,9 @@ export default class WikiComposePage extends Page {
                 options: categoryOptions,
                 value: this.categoryId,
                 disabled: this.saving,
-                onchange: (v: string) => { this.categoryId = v; },
+                onchange: (v: string) => {
+                  this.categoryId = v;
+                },
               }),
             ])
           : null,
@@ -146,13 +150,17 @@ export default class WikiComposePage extends Page {
         m('div', { className: 'Form-group' }, [
           m('label', tr('compose.body_label', 'Content')),
           wikiComposerAvailable()
-            ? m('div', { className: 'LinkRobinsWiki-composePreview' }, wikiComposerPreview({
-                composing: composerOpen,
-                placeholder: this.body
-                  ? tr('compose.body_placeholder_edit', 'Click to continue editing…')
-                  : tr('compose.body_placeholder_click', 'Click to write the article…'),
-                onclick: () => this._openComposer(),
-              }))
+            ? m(
+                'div',
+                { className: 'LinkRobinsWiki-composePreview' },
+                wikiComposerPreview({
+                  composing: composerOpen,
+                  placeholder: this.body
+                    ? tr('compose.body_placeholder_edit', 'Click to continue editing…')
+                    : tr('compose.body_placeholder_click', 'Click to write the article…'),
+                  onclick: () => this._openComposer(),
+                })
+              )
             : this._renderTextareaFallback(),
         ]),
 
@@ -160,11 +168,18 @@ export default class WikiComposePage extends Page {
         // fallback needs page-level Save/Cancel buttons.
         !wikiComposerAvailable()
           ? m('div', { className: 'Form-group LinkRobinsWiki-formActions' }, [
-              m(Button, { className: 'Button Button--primary', loading: this.saving, disabled: this.saving, onclick: () => this._submit() },
-                this.editing ? tr('compose.submit_update', 'Save changes') : tr('compose.submit_create', 'Publish article')),
+              m(
+                Button,
+                { className: 'Button Button--primary', loading: this.saving, disabled: this.saving, onclick: () => this._submit() },
+                this.editing ? tr('compose.submit_update', 'Save changes') : tr('compose.submit_create', 'Publish article')
+              ),
               m(Button, { className: 'Button', onclick: () => this._cancel() }, tr('action.cancel', 'Cancel')),
             ])
-          : m('div', { className: 'LinkRobinsWiki-formActions' }, m(Button, { className: 'Button', onclick: () => this._cancel() }, tr('action.cancel', 'Cancel'))),
+          : m(
+              'div',
+              { className: 'LinkRobinsWiki-formActions' },
+              m(Button, { className: 'Button', onclick: () => this._cancel() }, tr('action.cancel', 'Cancel'))
+            ),
       ]),
     ];
   }
@@ -176,7 +191,9 @@ export default class WikiComposePage extends Page {
       value: this.body,
       disabled: this.saving,
       placeholder: tr('compose.body_placeholder', 'Write the article. Markdown is supported.'),
-      oninput: (e: any) => { this.body = e.target.value; },
+      oninput: (e: any) => {
+        this.body = e.target.value;
+      },
     });
   }
 

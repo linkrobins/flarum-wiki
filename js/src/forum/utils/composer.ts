@@ -23,8 +23,7 @@ function makeWikiComposer(ComposerBody: any): any {
   return class WikiComposer extends ComposerBody {
     headerItems() {
       const items = super.headerItems();
-      const defs =
-        typeof this.attrs.wikiHeaderItems === 'function' ? this.attrs.wikiHeaderItems(this) : null;
+      const defs = typeof this.attrs.wikiHeaderItems === 'function' ? this.attrs.wikiHeaderItems(this) : null;
       if (defs && defs.length) {
         defs.forEach((d: any, i: number) => {
           if (d == null) return;
@@ -149,11 +148,7 @@ export function wikiComposerPreview(opts: { composing?: boolean; placeholder: an
       m('div', { className: 'Post-container' }, [
         m('div', { className: 'Post-side' }, user ? m(Avatar, { user, className: 'Post-avatar' }) : null),
         m('div', { className: 'Post-main' }, [
-          m(
-            'header',
-            { className: 'Post-header' },
-            m('div', { className: 'PostUser' }, m('h3', { className: 'PostUser-name' }, username(user)))
-          ),
+          m('header', { className: 'Post-header' }, m('div', { className: 'PostUser' }, m('h3', { className: 'PostUser-name' }, username(user)))),
           m('div', { className: 'Post-body' }, m(ComposerPostPreview, { className: 'Post-body', composer: app.composer })),
         ]),
       ])

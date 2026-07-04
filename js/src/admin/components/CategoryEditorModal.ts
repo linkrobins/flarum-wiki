@@ -41,9 +41,7 @@ export default class CategoryEditorModal extends FormModal {
   }
 
   title() {
-    return this.editId
-      ? tx('linkrobins-wiki.admin.category_editor.title_edit')
-      : tx('linkrobins-wiki.admin.category_editor.title_new');
+    return this.editId ? tx('linkrobins-wiki.admin.category_editor.title_edit') : tx('linkrobins-wiki.admin.category_editor.title_new');
   }
 
   content() {
@@ -146,9 +144,7 @@ export default class CategoryEditorModal extends FormModal {
             loading: this.saving,
             disabled: !this.name.trim(),
           },
-          this.editId
-            ? tx('linkrobins-wiki.admin.category_editor.submit_update')
-            : tx('linkrobins-wiki.admin.category_editor.submit_create')
+          this.editId ? tx('linkrobins-wiki.admin.category_editor.submit_update') : tx('linkrobins-wiki.admin.category_editor.submit_create')
         ),
 
         this.editId

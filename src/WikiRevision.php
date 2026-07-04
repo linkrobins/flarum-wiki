@@ -15,6 +15,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * The trait gives us formatContent() so the history view can render an old
  * version's HTML the same way the live article is rendered.
+ *
+ * @property int $id
+ * @property int $article_id
+ * @property int|null $user_id
+ * @property string $title
+ * @property string $content
+ * @property string|null $summary
+ * @property \Carbon\Carbon|null $created_at
+ * @property \Carbon\Carbon|null $updated_at
+ * @property-read WikiArticle|null $article
+ * @property-read User|null $user
  */
 class WikiRevision extends AbstractModel implements Formattable
 {

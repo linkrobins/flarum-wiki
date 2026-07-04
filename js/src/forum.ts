@@ -29,10 +29,6 @@ app.initializers.add('linkrobins-wiki', () => {
 
   // Global "Wiki" link in the index sidebar nav (shown on every page).
   extend(IndexSidebar.prototype, 'navItems', (items: any) => {
-    items.add(
-      'linkrobins-wiki',
-      m(LinkButton, { href: basePath() + BASE_PATH, icon: 'fas fa-book' }, tr('nav', 'Wiki')),
-      30
-    );
+    items.add('linkrobins-wiki', m(LinkButton, { href: basePath() + BASE_PATH, icon: 'fas fa-book' }, tr('nav', 'Wiki')), 30);
   });
 });

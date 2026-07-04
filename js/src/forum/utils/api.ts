@@ -62,27 +62,16 @@ export function loadComments(articleId: string | number, offset = 0): Promise<an
 }
 
 export function postComment(article: any, content: string): Promise<any> {
-  return app.store
-    .createRecord('linkrobins-wiki-comments')
-    .save({ content, relationships: { article } });
+  return app.store.createRecord('linkrobins-wiki-comments').save({ content, relationships: { article } });
 }
 
 // --- Writes (store records: cached, reactive, relationship-aware) --------
 
-export function createArticle(
-  title: string,
-  body: string,
-  category: WikiCategory | null
-): Promise<WikiArticle> {
-  return app.store
-    .createRecord('linkrobins-wiki-articles')
-    .save({ title, content: body, relationships: { category: category || null } });
+export function createArticle(title: string, body: string, category: WikiCategory | null): Promise<WikiArticle> {
+  return app.store.createRecord('linkrobins-wiki-articles').save({ title, content: body, relationships: { category: category || null } });
 }
 
-export function updateArticle(
-  article: WikiArticle,
-  attrs: Record<string, any>
-): Promise<WikiArticle> {
+export function updateArticle(article: WikiArticle, attrs: Record<string, any>): Promise<WikiArticle> {
   return article.save(attrs);
 }
 
@@ -95,12 +84,7 @@ export function updateArticle(
 // When the caller is backed by Flarum's TextEditor (which owns its own
 // textarea), pass `editorGetter` so we insert into the live editor (whose
 // oninput syncs target[bodyKey] back for us); plain-textarea callers omit it.
-export function uploadFilesToBody(
-  target: any,
-  files: FileList | File[],
-  bodyKey: string,
-  editorGetter?: () => any
-): Promise<void> {
+export function uploadFilesToBody(target: any, files: FileList | File[], bodyKey: string, editorGetter?: () => any): Promise<void> {
   target.uploadError = null;
   target.uploadingCount = (target.uploadingCount || 0) + files.length;
   m.redraw();
