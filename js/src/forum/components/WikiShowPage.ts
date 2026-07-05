@@ -5,11 +5,12 @@ import Dropdown from 'flarum/common/components/Dropdown';
 import PageStructure from 'flarum/forum/components/PageStructure';
 import WikiIndexSidebar from './WikiIndexSidebar';
 import WikiComments from './WikiComments';
-import { tr } from '../utils/translate';
+import { tr, trText } from '../utils/translate';
 import { basePath, BASE_PATH, formatDate, userLink, showError } from '../utils/helpers';
 import { canEditWikiArticles } from '../utils/permissions';
 import { loadArticle, loadRevisions, WIKI_PAGE_LIMIT } from '../utils/api';
 import { lineDiff, foldContext, hasChanges, DiffLine } from '../utils/diff';
+import { processWikiHeadings, scrollToAnchor, tocEnabled, tocMinHeadings, WikiTocEntry } from '../utils/toc';
 
 export default class WikiShowPage extends Page {
   loading = true;
@@ -23,9 +24,38 @@ export default class WikiShowPage extends Page {
   revisionsHasMore = false;
   expandedRevision: string | null = null;
 
+  // Table of contents (sticky rail). Entries are derived from the rendered
+  // article body; activeTocId tracks the section currently in view.
+  tocEntries: WikiTocEntry[] = [];
+  activeTocId: string | null = null;
+  private _tocSig = '';
+  private _tocHashHandled = false;
+  private _boundScroll: (() => void) | null = null;
+  private _spyRaf: number | null = null;
+
   oninit(vnode: any) {
     super.oninit(vnode);
     this._load();
+  }
+
+  oncreate(vnode: any) {
+    super.oncreate(vnode);
+    // Scroll-spy: highlight the contents entry for the section in view. Passive
+    // + rAF-throttled so it stays off the scroll critical path.
+    this._boundScroll = () => this._scheduleSpy();
+    window.addEventListener('scroll', this._boundScroll, { passive: true });
+  }
+
+  onremove(vnode: any) {
+    if (this._boundScroll) {
+      window.removeEventListener('scroll', this._boundScroll);
+      this._boundScroll = null;
+    }
+    if (this._spyRaf != null) {
+      cancelAnimationFrame(this._spyRaf);
+      this._spyRaf = null;
+    }
+    if (super.onremove) super.onremove(vnode);
   }
 
   onbeforeupdate(vnode: any) {
@@ -42,6 +72,10 @@ export default class WikiShowPage extends Page {
     this.revisions = null;
     this.revisionsHasMore = false;
     this.historyOpen = false;
+    this.tocEntries = [];
+    this.activeTocId = null;
+    this._tocSig = '';
+    this._tocHashHandled = false;
     m.redraw();
 
     loadArticle(m.route.param('id'))
@@ -94,18 +128,153 @@ export default class WikiShowPage extends Page {
         ? m('div', { className: 'LinkRobinsWiki-deletedNotice' }, tr('show.deleted_notice', 'This article is deleted. Only editors can see it.'))
         : null,
 
-      m('header', { className: 'LinkRobinsWiki-articleHeader' }, [
-        this._renderControls(article),
-        m('h1', { className: 'LinkRobinsWiki-articleTitle' }, article.title()),
-        this._renderByline(article),
+      m('div', { className: 'LinkRobinsWiki-articleLayout' }, [
+        m('div', { className: 'LinkRobinsWiki-articleMain' }, [
+          m('header', { className: 'LinkRobinsWiki-articleHeader' }, [
+            this._renderControls(article),
+            m('h1', { className: 'LinkRobinsWiki-articleTitle' }, article.title()),
+            this._renderByline(article),
+          ]),
+
+          m(
+            'div',
+            {
+              className: 'LinkRobinsWiki-articleBody Post-body',
+              // The body is m.trust'd HTML, so headings only exist post-render:
+              // instrument them once they're in the DOM (and again if the article
+              // content changes, which remounts the trusted node).
+              oncreate: (vnode: any) => this._processToc(vnode.dom),
+              onupdate: (vnode: any) => this._processToc(vnode.dom),
+            },
+            m.trust(article.contentHtml() || '')
+          ),
+
+          this._renderHistory(article),
+
+          m(WikiComments, { article }),
+        ]),
+
+        this._renderTocRail(),
       ]),
-
-      m('div', { className: 'LinkRobinsWiki-articleBody Post-body' }, m.trust(article.contentHtml() || '')),
-
-      this._renderHistory(article),
-
-      m(WikiComments, { article }),
     ];
+  }
+
+  // --- Table of contents -------------------------------------------------
+
+  _processToc(bodyEl: Element) {
+    if (!tocEnabled()) return;
+
+    const entries = processWikiHeadings(bodyEl);
+    const sig = entries.map((e) => e.level + ':' + e.id).join('|');
+
+    // Only redraw when the heading set actually changed. processWikiHeadings is
+    // idempotent (ids are reused via data attributes), so the redraw it triggers
+    // re-enters onupdate, recomputes the same signature, and stops -- no loop.
+    if (sig !== this._tocSig) {
+      this._tocSig = sig;
+      this.tocEntries = entries;
+      this._spy(false);
+      m.redraw();
+    }
+
+    // Honor a deep link to a heading (#wiki-...) once the anchors exist. The
+    // browser's own jump happened before ids were assigned, so we finish it.
+    if (!this._tocHashHandled) {
+      this._tocHashHandled = true;
+      const hash = (window.location.hash || '').replace(/^#/, '');
+      if (hash && entries.some((e) => e.id === hash)) {
+        requestAnimationFrame(() => scrollToAnchor(hash));
+      }
+    }
+  }
+
+  _renderTocRail() {
+    if (!tocEnabled()) return null;
+
+    const entries = this.tocEntries;
+    if (!entries || entries.length < tocMinHeadings()) return null;
+
+    // Level 1 in the list is the shallowest heading actually present, so a
+    // ##/### article still indents from a sensible baseline.
+    let minLevel = Infinity;
+    for (const e of entries) if (e.level < minLevel) minLevel = e.level;
+    if (!isFinite(minLevel)) minLevel = 1;
+
+    return m(
+      'aside',
+      { className: 'LinkRobinsWiki-tocRail' },
+      m('nav', { className: 'LinkRobinsWiki-toc', 'aria-label': trText('show.toc_heading', 'Contents') }, [
+        m('div', { className: 'LinkRobinsWiki-toc-title' }, tr('show.toc_heading', 'Contents')),
+        m(
+          'ol',
+          { className: 'LinkRobinsWiki-toc-list' },
+          entries.map((e) =>
+            m(
+              'li',
+              {
+                key: e.id,
+                className:
+                  'LinkRobinsWiki-toc-item LinkRobinsWiki-toc-item--level-' +
+                  (e.level - minLevel + 1) +
+                  (this.activeTocId === e.id ? ' is-active' : ''),
+              },
+              m(
+                'a',
+                {
+                  className: 'LinkRobinsWiki-toc-link',
+                  href: '#' + e.id,
+                  onclick: (ev: Event) => {
+                    ev.preventDefault();
+                    scrollToAnchor(e.id);
+                    this.activeTocId = e.id;
+                    try {
+                      window.history.replaceState(null, '', '#' + e.id);
+                    } catch (err) {
+                      // history API unavailable -- non-fatal, the scroll still happened.
+                    }
+                  },
+                },
+                e.text
+              )
+            )
+          )
+        ),
+      ])
+    );
+  }
+
+  _scheduleSpy() {
+    if (this._spyRaf != null) return;
+    this._spyRaf = requestAnimationFrame(() => {
+      this._spyRaf = null;
+      this._spy(true);
+    });
+  }
+
+  // Pick the last heading whose top has scrolled above the header line; that's
+  // the section the reader is currently in. Entries are in document order, so we
+  // can stop at the first heading still below the line.
+  _spy(allowRedraw: boolean) {
+    if (!this.tocEntries.length) return;
+
+    const header = document.querySelector('.App-header');
+    const threshold = (header ? header.getBoundingClientRect().height : 0) + 24;
+
+    let current: string | null = this.tocEntries[0].id;
+    for (const e of this.tocEntries) {
+      const el = document.getElementById(e.id);
+      if (!el) continue;
+      if (el.getBoundingClientRect().top - threshold <= 0) {
+        current = e.id;
+      } else {
+        break;
+      }
+    }
+
+    if (current !== this.activeTocId) {
+      this.activeTocId = current;
+      if (allowRedraw) m.redraw();
+    }
   }
 
   _renderByline(article: any) {

@@ -29,7 +29,9 @@ export default class WikiAdminPage extends ExtensionPage {
 
   content() {
     return m('div', { className: 'ExtensionPage-settings' }, [
-      m('div', { className: 'container' }, [m('div', { className: 'LinkRobinsWikiAdmin' }, [this._renderIndexLayout(), this._renderCategories()])]),
+      m('div', { className: 'container' }, [
+        m('div', { className: 'LinkRobinsWikiAdmin' }, [this._renderIndexLayout(), this._renderToc(), this._renderCategories()]),
+      ]),
     ]);
   }
 
@@ -66,6 +68,32 @@ export default class WikiAdminPage extends ExtensionPage {
 
   _shortcodeRow(code: string, key: string) {
     return m('li', [m('code', code), ' — ', t('linkrobins-wiki.admin.index_layout.' + key)]);
+  }
+
+  // --- Table of contents -----------------------------------------------
+
+  _renderToc() {
+    return m('section', { className: 'LinkRobinsWikiAdmin-section' }, [
+      m('h2', t('linkrobins-wiki.admin.toc.heading')),
+      m('p', { className: 'helpText' }, t('linkrobins-wiki.admin.toc.intro')),
+
+      this.buildSettingComponent({
+        type: 'boolean',
+        setting: 'linkrobins-wiki.toc_enabled',
+        label: t('linkrobins-wiki.admin.toc.enabled_label'),
+        help: t('linkrobins-wiki.admin.toc.enabled_help'),
+      }),
+
+      this.buildSettingComponent({
+        type: 'number',
+        setting: 'linkrobins-wiki.toc_min_headings',
+        min: 1,
+        label: t('linkrobins-wiki.admin.toc.min_headings_label'),
+        help: t('linkrobins-wiki.admin.toc.min_headings_help'),
+      }),
+
+      this.submitButton(),
+    ]);
   }
 
   // --- Categories ------------------------------------------------------

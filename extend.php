@@ -34,7 +34,13 @@ return [
 
     (new Extend\Settings())
         ->default('linkrobins-wiki.index_layout', '')
-        ->serializeToForum('linkrobinsWikiIndexLayout', 'linkrobins-wiki.index_layout'),
+        // Table of contents: on by default, only shown once an article has at
+        // least this many headings so short articles don't get a stub rail.
+        ->default('linkrobins-wiki.toc_enabled', true)
+        ->default('linkrobins-wiki.toc_min_headings', 2)
+        ->serializeToForum('linkrobinsWikiIndexLayout', 'linkrobins-wiki.index_layout')
+        ->serializeToForum('linkrobinsWikiTocEnabled', 'linkrobins-wiki.toc_enabled', fn ($value) => (bool) $value)
+        ->serializeToForum('linkrobinsWikiTocMinHeadings', 'linkrobins-wiki.toc_min_headings', fn ($value) => max(1, (int) $value)),
 
     (new Extend\ApiResource(WikiCategoryResource::class)),
     (new Extend\ApiResource(WikiArticleResource::class)),
