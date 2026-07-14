@@ -6,8 +6,8 @@
     "keywords": ["flarum", "wiki", "knowledge-base", "documentation"],
     "homepage": "https://linkrobins.com",
     "support": {
-        "issues": "https://github.com/linkrobins/wiki/issues",
-        "source": "https://github.com/linkrobins/wiki"
+        "issues": "https://github.com/linkrobins/flarum-wiki/issues",
+        "source": "https://github.com/linkrobins/flarum-wiki"
     },
     "authors": [
         {
