@@ -92,7 +92,11 @@ export default class WikiIndexSidebar extends IndexSidebar {
     const active =
       this.attrs && this.attrs.activeCategory != null && this.attrs.activeCategory !== '' ? this.attrs.activeCategory : m.route.param('category');
 
-    items.add('linkrobinsWikiSeparator', m(Separator), -10);
+    // The wiki's own section starts at -20, safely below the global nav links
+    // (core's sit at 100..-10 and cross-extension ones like ours use -11), so
+    // the shared navigation block stays identical on every page instead of
+    // splitting apart when priorities tie.
+    items.add('linkrobinsWikiSeparator', m(Separator), -20);
 
     // "Index" -- the full article list. Active when no category is selected
     // (and on uncategorized articles).
@@ -107,7 +111,7 @@ export default class WikiIndexSidebar extends IndexSidebar {
         },
         tr('index.index_label', 'Index')
       ),
-      -11
+      -21
     );
 
     this.categories.forEach((cat: any, i: number) => {
@@ -122,7 +126,7 @@ export default class WikiIndexSidebar extends IndexSidebar {
           },
           cat.name()
         ),
-        -12 - i
+        -22 - i
       );
     });
 
