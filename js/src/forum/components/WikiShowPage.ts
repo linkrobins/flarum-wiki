@@ -6,8 +6,8 @@ import PageStructure from 'flarum/forum/components/PageStructure';
 import WikiIndexSidebar from './WikiIndexSidebar';
 import WikiComments from './WikiComments';
 import { tr, trText } from '../utils/translate';
-import { basePath, BASE_PATH, formatDate, userLink, showError } from '../utils/helpers';
-import { canEditWikiArticles } from '../utils/permissions';
+import { basePath, BASE_PATH, executeContentScripts, formatDate, userLink, showError } from '../utils/helpers';
+import { canEditWikiArticles, canViewWikiHistory } from '../utils/permissions';
 import { loadArticle, loadRevisions, WIKI_PAGE_LIMIT } from '../utils/api';
 import { lineDiff, foldContext, hasChanges, DiffLine } from '../utils/diff';
 import { processWikiHeadings, scrollToAnchor, tocEnabled, tocMinHeadings, WikiTocEntry } from '../utils/toc';
@@ -142,9 +142,17 @@ export default class WikiShowPage extends Page {
               className: 'LinkRobinsWiki-articleBody Post-body',
               // The body is m.trust'd HTML, so headings only exist post-render:
               // instrument them once they're in the DOM (and again if the article
-              // content changes, which remounts the trusted node).
-              oncreate: (vnode: any) => this._processToc(vnode.dom),
-              onupdate: (vnode: any) => this._processToc(vnode.dom),
+              // content changes, which remounts the trusted node). Scripts the
+              // formatter embedded (e.g. the code-highlighting loader) are inert
+              // after m.trust and must be re-run.
+              oncreate: (vnode: any) => {
+                executeContentScripts(vnode.dom, article.contentHtml() || '');
+                this._processToc(vnode.dom);
+              },
+              onupdate: (vnode: any) => {
+                executeContentScripts(vnode.dom, article.contentHtml() || '');
+                this._processToc(vnode.dom);
+              },
             },
             m.trust(article.contentHtml() || '')
           ),
@@ -363,6 +371,10 @@ export default class WikiShowPage extends Page {
   // --- Revision history --------------------------------------------------
 
   _renderHistory(article: any) {
+    // Admins can restrict revision history to certain groups; don't offer the
+    // section to anyone the server would 403.
+    if (!canViewWikiHistory()) return null;
+
     const count = article.revisionCount ? article.revisionCount() : 0;
     if (!count) return null;
 

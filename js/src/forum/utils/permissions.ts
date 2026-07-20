@@ -38,3 +38,14 @@ export function canCommentWiki(): boolean {
     return false;
   }
 }
+
+// No logged-in requirement: history is guest-visible unless an admin
+// restricts the permission, and the attribute is serialized for guests too.
+export function canViewWikiHistory(): boolean {
+  try {
+    if (isAdmin()) return true;
+    return !!readForumAttribute('canViewWikiHistory');
+  } catch (e) {
+    return false;
+  }
+}

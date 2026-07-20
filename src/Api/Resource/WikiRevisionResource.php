@@ -46,10 +46,14 @@ class WikiRevisionResource extends AbstractDatabaseResource
 
     public function endpoints(): array
     {
+        // No ->authenticated(): viewHistory is seeded to the guest group, so
+        // guests may hold it. The gate only bites once an admin restricts it.
         return [
             Endpoint\Show::make()
+                ->can('viewHistory')
                 ->defaultInclude(['user']),
             Endpoint\Index::make()
+                ->can('viewHistory')
                 ->defaultInclude(['user'])
                 ->paginate(25, 100),
         ];

@@ -109,5 +109,17 @@ return [
                         return false;
                     }
                 }),
+
+            // Unlike the fields above, guests can hold viewHistory (it's
+            // seeded to the guest group so history stays public by default),
+            // so there is no isGuest() short-circuit here.
+            \Flarum\Api\Schema\Boolean::make('canViewWikiHistory')
+                ->get(function ($model, \Flarum\Api\Context $context) {
+                    try {
+                        return $context->getActor()->can('viewHistory');
+                    } catch (\Throwable $e) {
+                        return false;
+                    }
+                }),
         ]),
 ];

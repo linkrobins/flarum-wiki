@@ -208,6 +208,15 @@
     > *:first-child { margin-top: 0; }
     > *:last-child  { margin-bottom: 0; }
 
+    // Core's .Post-body rules make `pre code` scroll horizontally, but tables
+    // have no such handling anywhere, so a wide table would stretch the page
+    // on phones. Scroll them in place like GitHub does.
+    table {
+        display: block;
+        max-width: 100%;
+        overflow-x: auto;
+    }
+
     // Keep a heading clear of the fixed forum header when it's jumped to
     // directly (deep link or a contents click).
     h1, h2, h3, h4, h5, h6 {
@@ -299,6 +308,13 @@
         flex-direction: column;
         gap: 0;
     }
+    // In the stacked layout the cross axis is horizontal, and the container's
+    // `align-items: flex-start` would size the column to its content -- so one
+    // long code line makes the whole article wider than the phone screen.
+    // Stretch it to the viewport and let wide content scroll inside instead.
+    .LinkRobinsWiki-articleMain {
+        width: 100%;
+    }
     .LinkRobinsWiki-tocRail {
         order: -1;
         position: static;
@@ -373,7 +389,7 @@
 
 @media (max-width: 767px) {
     .LinkRobinsWiki-articleTitle {
-        font-size: 1.4rem;
+        font-size: calc(1.4rem * var(--lr-text-scale, 1));
     }
     .LinkRobinsWiki-articleControls {
         position: static;

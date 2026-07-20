@@ -40,6 +40,16 @@ app.initializers.add('linkrobins-wiki', () => {
         'moderate',
         95
       );
+      app.registry.registerPermission(
+        {
+          permission: 'linkrobins-wiki.viewHistory',
+          icon: 'fas fa-history',
+          label: tx('linkrobins-wiki.admin.permissions.view_history'),
+          allowGuest: true,
+        },
+        'view',
+        95
+      );
     }
   } catch (e) {
     console.warn('[linkrobins/wiki] could not register permission:', e);

@@ -10,6 +10,7 @@ use Flarum\User\User;
  *
  *   linkrobins-wiki.createArticle -- start new articles
  *   linkrobins-wiki.editArticles  -- edit / moderate any article
+ *   linkrobins-wiki.viewHistory   -- view article revision history
  *
  * Admins always pass. Category management is admin-only.
  */
@@ -28,6 +29,11 @@ class GlobalPolicy extends AbstractPolicy
     public function comment(User $actor): bool
     {
         return WikiAbilities::canComment($actor);
+    }
+
+    public function viewHistory(User $actor): bool
+    {
+        return WikiAbilities::canViewHistory($actor);
     }
 
     public function manageCategories(User $actor): bool

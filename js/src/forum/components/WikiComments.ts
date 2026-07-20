@@ -4,7 +4,7 @@ import LoadingIndicator from 'flarum/common/components/LoadingIndicator';
 import Button from 'flarum/common/components/Button';
 import Dropdown from 'flarum/common/components/Dropdown';
 import { tr } from '../utils/translate';
-import { formatDate, userLink, showError } from '../utils/helpers';
+import { executeContentScripts, formatDate, userLink, showError } from '../utils/helpers';
 import { canCommentWiki } from '../utils/permissions';
 import { loadComments, postComment, WIKI_PAGE_LIMIT } from '../utils/api';
 import { wikiComposerAvailable, wikiComposerOpenFor, openWikiComposer, wikiComposerPreview } from '../utils/composer';
@@ -126,7 +126,17 @@ export default class WikiComments extends Component {
         ]),
         deleted
           ? m('div', { className: 'LinkRobinsWiki-comment-deleted' }, tr('comments.deleted', 'This comment was deleted.'))
-          : m('div', { className: 'LinkRobinsWiki-comment-body Post-body' }, m.trust(comment.contentHtml() || '')),
+          : m(
+              'div',
+              {
+                className: 'LinkRobinsWiki-comment-body Post-body',
+                // Run formatter-embedded scripts (syntax highlighting); inert
+                // after m.trust. Guarded per content string inside the helper.
+                oncreate: (vnode: any) => executeContentScripts(vnode.dom, comment.contentHtml() || ''),
+                onupdate: (vnode: any) => executeContentScripts(vnode.dom, comment.contentHtml() || ''),
+              },
+              m.trust(comment.contentHtml() || '')
+            ),
       ]),
     ]);
   }

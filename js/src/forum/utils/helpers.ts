@@ -76,6 +76,33 @@ export function showError(message: any): void {
 }
 
 /**
+ * Run the <script> tags embedded in formatted content, once per content
+ * string. The formatter can emit scripts inside rendered HTML (core's
+ * markdown does this for its syntax-highlighting loader), but HTML inserted
+ * via m.trust never executes them -- so without this, code blocks render
+ * unhighlighted. Core's CommentPost does the same for discussion posts.
+ *
+ * The executed-content marker lives on the DOM node itself: Mithril only
+ * rewrites the element's HTML when the trusted string changes, so a stale
+ * marker exactly tracks a stale (already-executed) DOM.
+ */
+export function executeContentScripts(el: Element | null | undefined, html: string): void {
+  if (!el) return;
+  const node = el as any;
+  if (node._lrWikiScriptedHtml === html) return;
+  node._lrWikiScriptedHtml = html;
+
+  el.querySelectorAll('script').forEach((inert) => {
+    try {
+      const script = document.createElement('script');
+      script.textContent = inert.textContent;
+      Array.from(inert.attributes).forEach((attr) => script.setAttribute(attr.name, attr.value));
+      inert.parentNode && inert.parentNode.replaceChild(script, inert);
+    } catch (e) {}
+  });
+}
+
+/**
  * Render a username as a link to the user's profile. Accepts a store User
  * model; falls back to plain text if there's no username.
  */
