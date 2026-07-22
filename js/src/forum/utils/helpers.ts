@@ -21,6 +21,21 @@ export function basePath(): string {
   }
 }
 
+// The canonical URL segment for an article: its slug when it has one, its id
+// otherwise (pre-slug rows whose title had nothing slug-like). The server
+// resolves both.
+export function articleSegment(article: any): string {
+  try {
+    const slug = article && article.slug && article.slug();
+    if (slug) return String(slug);
+  } catch (e) {}
+  return String(article && article.id ? article.id() : '');
+}
+
+export function articleHref(article: any): string {
+  return basePath() + BASE_PATH + '/' + encodeURIComponent(articleSegment(article));
+}
+
 export function suppressTagsList(): void {
   try {
     if (app.current && typeof app.current.set === 'function') {

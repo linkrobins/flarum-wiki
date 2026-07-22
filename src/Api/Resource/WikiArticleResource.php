@@ -11,6 +11,8 @@ use Flarum\Api\Sort\SortColumn;
 use Flarum\Locale\TranslatorInterface;
 use Illuminate\Database\Eloquent\Builder;
 use LinkRobins\Wiki\Access\WikiAbilities;
+use LinkRobins\Wiki\Faq;
+use LinkRobins\Wiki\Slug;
 use LinkRobins\Wiki\WikiArticle;
 use LinkRobins\Wiki\WikiCategory;
 use Psr\Log\LoggerInterface;
@@ -49,6 +51,22 @@ class WikiArticleResource extends AbstractDatabaseResource
         if (WikiAbilities::isEditor($context->getActor())) {
             $query->withTrashed();
         }
+    }
+
+    /**
+     * Resolve a URL segment to an article: numeric means id, anything else is
+     * a slug. Slugs can never be purely numeric (Slug::isReserved), so the two
+     * namespaces can't shadow each other. Both paths go through the
+     * visibility-scoped query, so a slug for a soft-deleted article 404s for
+     * non-editors just like its id does. Mirrors WikiCategoryResource::find.
+     */
+    public function find(string $id, Context $context): ?object
+    {
+        if (preg_match('/^\d+$/', $id)) {
+            return $this->query($context)->find($id);
+        }
+
+        return $this->query($context)->where('slug', $id)->first();
     }
 
     public function endpoints(): array
@@ -90,6 +108,25 @@ class WikiArticleResource extends AbstractDatabaseResource
                     $article->title = is_string($value) ? trim($value) : '';
                 }),
 
+            Schema\Str::make('slug')
+                ->nullable()
+                ->writable()
+                ->maxLength(191)
+                ->set(function (WikiArticle $article, $value) {
+                    $slug = Slug::normalize(is_string($value) ? $value : null);
+
+                    if ($slug === null) {
+                        // Blank means "no custom slug": on create the slug is
+                        // generated from the title after save; on update the
+                        // existing slug is kept so URLs don't silently break.
+                        $article->slug = $article->exists ? $article->getOriginal('slug') : null;
+
+                        return;
+                    }
+
+                    $article->slug = $slug;
+                }),
+
             Schema\Str::make('content')
                 ->writable()
                 ->set(function (WikiArticle $article, $value, FlarumContext $context) {
@@ -110,6 +147,67 @@ class WikiArticleResource extends AbstractDatabaseResource
                         $this->log->warning('[linkrobins/wiki] formatContent failed', ['exception' => $e]);
                         return '';
                     }
+                }),
+
+            // The article's FAQ, an optional accordion under the body. Reads
+            // return {question, answer, answerHtml} (source for the editor,
+            // rendered HTML for display); writes accept {question, answer}
+            // with Markdown answers, parsed through the same formatter
+            // pipeline as the body. An empty list clears the FAQ. Changes
+            // don't touch the revision history, which covers title + body.
+            Schema\Arr::make('faq')
+                ->writable()
+                ->get(function (WikiArticle $article, FlarumContext $context) {
+                    try {
+                        $formatter = WikiArticle::getFormatter();
+                        $out = [];
+
+                        foreach (Faq::fromStored($article->faq) as $entry) {
+                            try {
+                                $out[] = [
+                                    'question' => $entry['question'],
+                                    'answer' => (string) $formatter->unparse($entry['answer'], $article),
+                                    'answerHtml' => $formatter->render($entry['answer'], $article, $context->request),
+                                ];
+                            } catch (\Throwable $e) {
+                                // Skip the broken entry, keep the rest.
+                            }
+                        }
+
+                        return $out;
+                    } catch (\Throwable $e) {
+                        $this->log->warning('[linkrobins/wiki] faq serialization failed', ['exception' => $e]);
+
+                        return [];
+                    }
+                })
+                ->set(function (WikiArticle $article, $value, FlarumContext $context) {
+                    if (! is_array($value)) {
+                        $article->faq = null;
+
+                        return;
+                    }
+
+                    $entries = Faq::normalize($value);
+
+                    if (count($entries) > Faq::MAX_ENTRIES) {
+                        throw new BadRequestException(
+                            $this->translator->trans('linkrobins-wiki.api.faq_too_many', ['max' => Faq::MAX_ENTRIES])
+                        );
+                    }
+
+                    $formatter = WikiArticle::getFormatter();
+                    $actor = $context->getActor();
+                    $stored = [];
+
+                    foreach ($entries as $entry) {
+                        $stored[] = [
+                            'question' => $entry['question'],
+                            'answer' => $formatter->parse($entry['answer'], $article, $actor->isGuest() ? null : $actor),
+                        ];
+                    }
+
+                    $article->faq = $stored === [] ? null : json_encode($stored);
                 }),
 
             Schema\DateTime::make('createdAt')
@@ -215,6 +313,31 @@ class WikiArticleResource extends AbstractDatabaseResource
 
         $model->last_edited_at = Carbon::now();
 
+        if ($model->slug !== null) {
+            $this->assertSlugUsable($model->slug);
+        }
+
+        return $model;
+    }
+
+    /**
+     * With the row saved (and its id known), give a slugless article one
+     * derived from the title. Best-effort: a race on the unique index must
+     * fail the slug, never the create, the article stays reachable by id.
+     */
+    public function created(object $model, Context $context): ?object
+    {
+        /** @var WikiArticle $model */
+        if ($model->slug === null) {
+            try {
+                $model->slug = Slug::forArticle($model->title, (int) $model->id);
+                $model->save();
+            } catch (\Throwable $e) {
+                $model->slug = null;
+                $this->log->warning('[linkrobins/wiki] slug generation failed', ['exception' => $e]);
+            }
+        }
+
         return $model;
     }
 
@@ -236,6 +359,10 @@ class WikiArticleResource extends AbstractDatabaseResource
             $model->last_edited_by_user_id = (int) $context->getActor()->id;
         }
 
+        if ($model->isDirty('slug') && $model->slug !== null) {
+            $this->assertSlugUsable($model->slug, (int) $model->id);
+        }
+
         return $model;
     }
 
@@ -255,6 +382,21 @@ class WikiArticleResource extends AbstractDatabaseResource
         }
 
         $model->forceDelete();
+    }
+
+    protected function assertSlugUsable(string $slug, ?int $exceptId = null): void
+    {
+        if (Slug::isReserved($slug)) {
+            throw new BadRequestException(
+                $this->translator->trans('linkrobins-wiki.api.slug_invalid')
+            );
+        }
+
+        if (Slug::isTaken($slug, $exceptId)) {
+            throw new BadRequestException(
+                $this->translator->trans('linkrobins-wiki.api.slug_taken')
+            );
+        }
     }
 
     protected function assertContent(object $model): void

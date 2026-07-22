@@ -6,11 +6,11 @@ import PageStructure from 'flarum/forum/components/PageStructure';
 import WikiIndexSidebar from './WikiIndexSidebar';
 import WikiComments from './WikiComments';
 import { tr, trText } from '../utils/translate';
-import { basePath, BASE_PATH, executeContentScripts, formatDate, userLink, showError } from '../utils/helpers';
+import { basePath, BASE_PATH, articleHref, articleSegment, executeContentScripts, formatDate, userLink, showError } from '../utils/helpers';
 import { canEditWikiArticles, canViewWikiHistory } from '../utils/permissions';
 import { loadArticle, loadRevisions, WIKI_PAGE_LIMIT } from '../utils/api';
 import { lineDiff, foldContext, hasChanges, DiffLine } from '../utils/diff';
-import { processWikiHeadings, scrollToAnchor, tocEnabled, tocMinHeadings, WikiTocEntry } from '../utils/toc';
+import { fixedChromeHeight, processWikiHeadings, scrollToAnchor, tocEnabled, tocMinHeadings, WikiTocEntry } from '../utils/toc';
 
 export default class WikiShowPage extends Page {
   loading = true;
@@ -24,10 +24,20 @@ export default class WikiShowPage extends Page {
   revisionsHasMore = false;
   expandedRevision: string | null = null;
 
-  // Table of contents (sticky rail). Entries are derived from the rendered
-  // article body; activeTocId tracks the section currently in view.
+  // Table of contents (sticky rail on desktop, sticky bar on phones). Entries
+  // are derived from the rendered article body; activeTocId tracks the section
+  // currently in view.
   tocEntries: WikiTocEntry[] = [];
   activeTocId: string | null = null;
+  mobileTocOpen = false;
+  // Whether the phone contents bar is pinned below the titlebar. Core sets
+  // `overflow-x: hidden` on the body at phone width (for the drawer), which
+  // keeps position: sticky from ever engaging, so the pinning is done by hand
+  // from the existing scroll handler: once the bar's in-flow slot scrolls
+  // under the titlebar, the inner bar goes position: fixed and the slot keeps
+  // its height as a spacer.
+  mobileTocPinned = false;
+  private _barMetrics: { height: number; left: number; width: number } | null = null;
   private _tocSig = '';
   private _tocHashHandled = false;
   private _boundScroll: (() => void) | null = null;
@@ -59,8 +69,10 @@ export default class WikiShowPage extends Page {
   }
 
   onbeforeupdate(vnode: any) {
-    const id = m.route.param('id');
-    if (this.article && String(this.article.id()) !== String(id)) {
+    // The route param may be the article's id or its slug; both name the same
+    // article, so only a param matching neither means a real navigation.
+    const param = String(m.route.param('id'));
+    if (this.article && String(this.article.id()) !== param && String(this.article.slug && this.article.slug()) !== param) {
       this._load();
     }
     return true;
@@ -74,6 +86,9 @@ export default class WikiShowPage extends Page {
     this.historyOpen = false;
     this.tocEntries = [];
     this.activeTocId = null;
+    this.mobileTocOpen = false;
+    this.mobileTocPinned = false;
+    this._barMetrics = null;
     this._tocSig = '';
     this._tocHashHandled = false;
     m.redraw();
@@ -85,6 +100,7 @@ export default class WikiShowPage extends Page {
         try {
           app.setTitle(article.title() || tr('nav', 'Wiki'));
         } catch (e) {}
+        this._canonicalizeUrl(article);
         m.redraw();
       })
       .catch((err: any) => {
@@ -92,6 +108,22 @@ export default class WikiShowPage extends Page {
         this.loading = false;
         m.redraw();
       });
+  }
+
+  // If the article was reached by id but has a slug, quietly rewrite the
+  // address bar to the slug URL so the canonical form is what gets copied and
+  // shared. replaceState only: no navigation, and onbeforeupdate accepts both
+  // forms so the stale route param can't trigger a reload.
+  _canonicalizeUrl(article: any) {
+    try {
+      const param = String(m.route.param('id'));
+      const want = articleSegment(article);
+      if (want && param !== want) {
+        window.history.replaceState(null, '', articleHref(article) + window.location.hash);
+      }
+    } catch (e) {
+      // history API unavailable -- the id URL works fine too.
+    }
   }
 
   view() {
@@ -124,6 +156,8 @@ export default class WikiShowPage extends Page {
     const isDeleted = !!(article.isDeleted && article.isDeleted());
 
     return [
+      this._renderMobileToc(article),
+
       isDeleted
         ? m('div', { className: 'LinkRobinsWiki-deletedNotice' }, tr('show.deleted_notice', 'This article is deleted. Only editors can see it.'))
         : null,
@@ -157,6 +191,8 @@ export default class WikiShowPage extends Page {
             m.trust(article.contentHtml() || '')
           ),
 
+          this._renderFaq(article),
+
           this._renderHistory(article),
 
           m(WikiComments, { article }),
@@ -165,6 +201,59 @@ export default class WikiShowPage extends Page {
         this._renderTocRail(),
       ]),
     ];
+  }
+
+  // --- FAQ ----------------------------------------------------------------
+
+  // The article's optional FAQ accordion, under the body. Native
+  // <details>/<summary> so expand/collapse needs no state, plus a FAQPage
+  // JSON-LD block so search engines can pick the entries up as rich results
+  // (it's data, not executable, so rendering it inline is safe). Articles
+  // without entries render nothing at all.
+  _renderFaq(article: any) {
+    const entries = ((article.faq && article.faq()) || []).filter((entry: any) => entry && entry.question);
+    if (!entries.length) return null;
+
+    const jsonLd = {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: entries.map((entry: any) => ({
+        '@type': 'Question',
+        name: entry.question,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: String(entry.answerHtml || '')
+            .replace(/<[^>]*>/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim(),
+        },
+      })),
+    };
+
+    return m('section', { className: 'LinkRobinsWiki-faq' }, [
+      m('h2', { className: 'LinkRobinsWiki-faq-heading' }, tr('show.faq_heading', 'Frequently asked questions')),
+      entries.map((entry: any, index: number) =>
+        m('details', { className: 'LinkRobinsWiki-faq-item', key: 'faq-' + index }, [
+          m('summary', { className: 'LinkRobinsWiki-faq-question' }, [
+            m('i', { className: 'fas fa-caret-right LinkRobinsWiki-faq-caret', 'aria-hidden': 'true' }),
+            entry.question,
+          ]),
+          m(
+            'div',
+            {
+              className: 'LinkRobinsWiki-faq-answer Post-body',
+              // Same trusted-HTML rule as the article body: formatter scripts
+              // (e.g. the code-highlighting loader) are inert after m.trust
+              // and must be re-created to run.
+              oncreate: (vnode: any) => executeContentScripts(vnode.dom, entry.answerHtml || ''),
+              onupdate: (vnode: any) => executeContentScripts(vnode.dom, entry.answerHtml || ''),
+            },
+            m.trust(entry.answerHtml || '')
+          ),
+        ])
+      ),
+      m('script', { type: 'application/ld+json' }, JSON.stringify(jsonLd)),
+    ]);
   }
 
   // --- Table of contents -------------------------------------------------
@@ -196,11 +285,89 @@ export default class WikiShowPage extends Page {
     }
   }
 
-  _renderTocRail() {
-    if (!tocEnabled()) return null;
+  _tocReady(): boolean {
+    return tocEnabled() && this.tocEntries.length >= tocMinHeadings();
+  }
 
+  _renderTocRail() {
+    if (!this._tocReady()) return null;
+
+    return m(
+      'aside',
+      { className: 'LinkRobinsWiki-tocRail' },
+      m('nav', { className: 'LinkRobinsWiki-toc', 'aria-label': trText('show.toc_heading', 'Contents') }, [
+        m('div', { className: 'LinkRobinsWiki-toc-title' }, tr('show.toc_heading', 'Contents')),
+        this._renderTocList(),
+      ])
+    );
+  }
+
+  // The phone contents bar: article title + a hamburger revealing the
+  // contents, reachable from anywhere in the article (the side rail can't sit
+  // beside the text there and a top-of-page box is gone once you scroll).
+  // Display is media-queried, so it simply doesn't show on desktop. The outer
+  // div is the in-flow slot; when pinned it holds the bar's height as a spacer
+  // while the inner div goes fixed below the titlebar.
+  _renderMobileToc(article: any) {
+    if (!this._tocReady()) return null;
+
+    const open = this.mobileTocOpen;
+    const pinned = this.mobileTocPinned && this._barMetrics;
+
+    return m(
+      'div',
+      {
+        className: 'LinkRobinsWiki-mobileToc' + (open ? ' is-open' : '') + (pinned ? ' is-pinned' : ''),
+        style: pinned ? { height: this._barMetrics!.height + 'px' } : undefined,
+      },
+      m(
+        'div',
+        {
+          className: 'LinkRobinsWiki-mobileToc-inner',
+          style: pinned ? { left: this._barMetrics!.left + 'px', width: this._barMetrics!.width + 'px' } : undefined,
+        },
+        [
+          m(
+            'button',
+            {
+              type: 'button',
+              className: 'LinkRobinsWiki-mobileToc-bar',
+              'aria-expanded': open ? 'true' : 'false',
+              'aria-controls': 'linkrobins-wiki-mobile-toc',
+              'aria-label': trText('show.toc_heading', 'Contents'),
+              onclick: () => {
+                this.mobileTocOpen = !open;
+              },
+            },
+            [
+              m('span', { className: 'LinkRobinsWiki-mobileToc-title' }, article.title()),
+              m('i', { className: 'fas ' + (open ? 'fa-times' : 'fa-bars') + ' LinkRobinsWiki-mobileToc-icon', 'aria-hidden': 'true' }),
+            ]
+          ),
+          open
+            ? m(
+                'nav',
+                {
+                  id: 'linkrobins-wiki-mobile-toc',
+                  className: 'LinkRobinsWiki-mobileToc-panel',
+                  'aria-label': trText('show.toc_heading', 'Contents'),
+                },
+                this._renderTocList(() => {
+                  this.mobileTocOpen = false;
+                })
+              )
+            : null,
+        ]
+      )
+    );
+  }
+
+  // The contents list itself, shared by the rail and the phone panel. When
+  // `onNavigate` is given (the panel), it runs before the scroll and the
+  // scroll waits a frame, so the panel's collapse can reflow the page before
+  // the target position is measured.
+  _renderTocList(onNavigate?: () => void) {
     const entries = this.tocEntries;
-    if (!entries || entries.length < tocMinHeadings()) return null;
 
     // Level 1 in the list is the shallowest heading actually present, so a
     // ##/### article still indents from a sensible baseline.
@@ -209,45 +376,41 @@ export default class WikiShowPage extends Page {
     if (!isFinite(minLevel)) minLevel = 1;
 
     return m(
-      'aside',
-      { className: 'LinkRobinsWiki-tocRail' },
-      m('nav', { className: 'LinkRobinsWiki-toc', 'aria-label': trText('show.toc_heading', 'Contents') }, [
-        m('div', { className: 'LinkRobinsWiki-toc-title' }, tr('show.toc_heading', 'Contents')),
+      'ol',
+      { className: 'LinkRobinsWiki-toc-list' },
+      entries.map((e) =>
         m(
-          'ol',
-          { className: 'LinkRobinsWiki-toc-list' },
-          entries.map((e) =>
-            m(
-              'li',
-              {
-                key: e.id,
-                className:
-                  'LinkRobinsWiki-toc-item LinkRobinsWiki-toc-item--level-' +
-                  (e.level - minLevel + 1) +
-                  (this.activeTocId === e.id ? ' is-active' : ''),
+          'li',
+          {
+            key: e.id,
+            className:
+              'LinkRobinsWiki-toc-item LinkRobinsWiki-toc-item--level-' + (e.level - minLevel + 1) + (this.activeTocId === e.id ? ' is-active' : ''),
+          },
+          m(
+            'a',
+            {
+              className: 'LinkRobinsWiki-toc-link',
+              href: '#' + e.id,
+              onclick: (ev: Event) => {
+                ev.preventDefault();
+                this.activeTocId = e.id;
+                try {
+                  window.history.replaceState(null, '', '#' + e.id);
+                } catch (err) {
+                  // history API unavailable -- non-fatal, the scroll still happens.
+                }
+                if (onNavigate) {
+                  onNavigate();
+                  requestAnimationFrame(() => scrollToAnchor(e.id));
+                } else {
+                  scrollToAnchor(e.id);
+                }
               },
-              m(
-                'a',
-                {
-                  className: 'LinkRobinsWiki-toc-link',
-                  href: '#' + e.id,
-                  onclick: (ev: Event) => {
-                    ev.preventDefault();
-                    scrollToAnchor(e.id);
-                    this.activeTocId = e.id;
-                    try {
-                      window.history.replaceState(null, '', '#' + e.id);
-                    } catch (err) {
-                      // history API unavailable -- non-fatal, the scroll still happened.
-                    }
-                  },
-                },
-                e.text
-              )
-            )
+            },
+            e.text
           )
-        ),
-      ])
+        )
+      )
     );
   }
 
@@ -255,8 +418,45 @@ export default class WikiShowPage extends Page {
     if (this._spyRaf != null) return;
     this._spyRaf = requestAnimationFrame(() => {
       this._spyRaf = null;
+      this._updateMobileTocPin();
       this._spy(true);
     });
+  }
+
+  // Manual sticky for the phone bar (see the mobileTocPinned comment). The
+  // wrapper always stays in flow, so its rect tells us on every scroll tick
+  // whether the bar's natural position is under the titlebar.
+  _updateMobileTocPin() {
+    const wrap = document.querySelector('.LinkRobinsWiki-mobileToc') as HTMLElement | null;
+
+    if (!wrap || getComputedStyle(wrap).display === 'none') {
+      if (this.mobileTocPinned) {
+        this.mobileTocPinned = false;
+        m.redraw();
+      }
+      return;
+    }
+
+    const rect = wrap.getBoundingClientRect();
+    // +6 matches the pinned `top` gap in the LESS, so the bar doesn't jump
+    // when the handoff from in-flow to fixed happens.
+    const shouldPin = rect.top <= fixedChromeHeight() + 6;
+
+    if (shouldPin !== this.mobileTocPinned) {
+      if (shouldPin) {
+        // Spacer height = the bar row (not the wrapper, whose rect would
+        // include an open panel); left/width keep the fixed bar aligned with
+        // the content column.
+        const row = wrap.querySelector('.LinkRobinsWiki-mobileToc-bar');
+        this._barMetrics = {
+          height: row ? row.getBoundingClientRect().height + 2 : rect.height,
+          left: rect.left,
+          width: rect.width,
+        };
+      }
+      this.mobileTocPinned = shouldPin;
+      m.redraw();
+    }
   }
 
   // Pick the last heading whose top has scrolled above the header line; that's
@@ -265,8 +465,10 @@ export default class WikiShowPage extends Page {
   _spy(allowRedraw: boolean) {
     if (!this.tocEntries.length) return;
 
-    const header = document.querySelector('.App-header');
-    const threshold = (header ? header.getBoundingClientRect().height : 0) + 24;
+    // The phone contents bar also covers the top of the viewport once pinned
+    // (its row measures 0 on desktop, where it's display: none).
+    const bar = document.querySelector('.LinkRobinsWiki-mobileToc-bar');
+    const threshold = fixedChromeHeight() + (bar ? bar.getBoundingClientRect().height : 0) + 24;
 
     let current: string | null = this.tocEntries[0].id;
     for (const e of this.tocEntries) {

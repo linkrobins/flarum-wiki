@@ -5,7 +5,7 @@ import Button from 'flarum/common/components/Button';
 import PageStructure from 'flarum/forum/components/PageStructure';
 import WikiIndexSidebar from './WikiIndexSidebar';
 import { tr } from '../utils/translate';
-import { basePath, BASE_PATH, showError } from '../utils/helpers';
+import { basePath, BASE_PATH, articleHref, showError } from '../utils/helpers';
 import { canCreateWikiArticle } from '../utils/permissions';
 import { loadArticle, loadCategories, createArticle, updateArticle } from '../utils/api';
 import { wikiComposerAvailable, wikiComposerOpenFor, openWikiComposer, wikiComposerPreview } from '../utils/composer';
@@ -25,8 +25,13 @@ export default class WikiComposePage extends Page {
   categories: any[] = [];
 
   title = '';
+  slug = '';
   body = '';
   categoryId: string = '';
+  // FAQ entries being edited. `uid` is a client-side key so removals don't
+  // make mithril reuse the wrong entry's inputs.
+  faq: { uid: number; question: string; answer: string }[] = [];
+  private _faqUid = 0;
 
   oninit(vnode: any) {
     super.oninit(vnode);
@@ -52,7 +57,13 @@ export default class WikiComposePage extends Page {
           .then((article: any) => {
             this.article = article;
             this.title = article.title() || '';
+            this.slug = (article.slug && article.slug()) || '';
             this.body = article.content() || '';
+            this.faq = ((article.faq && article.faq()) || []).map((entry: any) => ({
+              uid: this._faqUid++,
+              question: (entry && entry.question) || '',
+              answer: (entry && entry.answer) || '',
+            }));
             const cat = article.category && article.category();
             this.categoryId = cat ? String(cat.id()) : '';
           })
@@ -133,6 +144,20 @@ export default class WikiComposePage extends Page {
           }),
         ]),
 
+        m('div', { className: 'Form-group' }, [
+          m('label', tr('compose.slug_label', 'URL slug')),
+          m('input', {
+            className: 'FormControl',
+            value: this.slug,
+            disabled: this.saving,
+            placeholder: tr('compose.slug_placeholder', 'e.g. getting-started'),
+            oninput: (e: any) => {
+              this.slug = e.target.value;
+            },
+          }),
+          m('div', { className: 'helpText' }, tr('compose.slug_help', "Used in the article's URL. Leave blank to generate it from the title.")),
+        ]),
+
         this.categories.length
           ? m('div', { className: 'Form-group' }, [
               m('label', tr('compose.category_label', 'Category')),
@@ -164,6 +189,8 @@ export default class WikiComposePage extends Page {
             : this._renderTextareaFallback(),
         ]),
 
+        this._renderFaqEditor(),
+
         // With the docked composer the submit lives inside it; only the
         // fallback needs page-level Save/Cancel buttons.
         !wikiComposerAvailable()
@@ -182,6 +209,69 @@ export default class WikiComposePage extends Page {
             ),
       ]),
     ];
+  }
+
+  // Optional Q&A pairs rendered as an accordion under the article. Kept out
+  // of the docked composer on purpose: they're structured fields, not body
+  // text, and most articles won't have any.
+  _renderFaqEditor() {
+    return m('div', { className: 'Form-group LinkRobinsWiki-faqEditor' }, [
+      m('label', tr('compose.faq_heading', 'FAQ')),
+      m(
+        'div',
+        { className: 'helpText' },
+        tr('compose.faq_help', 'Optional questions and answers shown under the article. Markdown is supported in answers.')
+      ),
+
+      this.faq.map((entry, index) =>
+        m('div', { className: 'LinkRobinsWiki-faqEditor-entry', key: 'faq-' + entry.uid }, [
+          m('input', {
+            className: 'FormControl',
+            value: entry.question,
+            disabled: this.saving,
+            placeholder: tr('compose.faq_question_placeholder', 'Question'),
+            oninput: (e: any) => {
+              entry.question = e.target.value;
+            },
+          }),
+          m('textarea', {
+            className: 'FormControl',
+            rows: 3,
+            value: entry.answer,
+            disabled: this.saving,
+            placeholder: tr('compose.faq_answer_placeholder', 'Answer. Markdown is supported.'),
+            oninput: (e: any) => {
+              entry.answer = e.target.value;
+            },
+          }),
+          m(
+            'button',
+            {
+              type: 'button',
+              className: 'LinkRobinsWiki-faqEditor-remove',
+              disabled: this.saving,
+              onclick: () => {
+                this.faq.splice(index, 1);
+              },
+            },
+            [m('i', { className: 'fas fa-times', 'aria-hidden': 'true' }), ' ', tr('compose.faq_remove', 'Remove question')]
+          ),
+        ])
+      ),
+
+      m(
+        Button,
+        {
+          className: 'Button LinkRobinsWiki-faqEditor-add',
+          icon: 'fas fa-plus',
+          disabled: this.saving,
+          onclick: () => {
+            this.faq.push({ uid: this._faqUid++, question: '', answer: '' });
+          },
+        },
+        tr('compose.faq_add', 'Add question')
+      ),
+    ]);
   }
 
   _renderTextareaFallback() {
@@ -241,24 +331,36 @@ export default class WikiComposePage extends Page {
     if (body) body.loading = true;
     m.redraw();
 
+    const slug = (this.slug || '').trim();
+    const faq = this.faq
+      .map((entry) => ({ question: (entry.question || '').trim(), answer: (entry.answer || '').trim() }))
+      .filter((entry) => entry.question && entry.answer);
+
     const done = (article: any) => {
       this.saving = false;
       this.body = '';
       if (body && body.composer) body.composer.hide();
-      m.route.set(basePath() + BASE_PATH + '/' + encodeURIComponent(article.id()));
+      m.route.set(articleHref(article));
     };
     const fail = (err: any) => {
       this.saving = false;
       if (body) body.loading = false;
-      showError(tr('errors.submit', 'Could not save the article.'));
+      // Prefer the server's message: slug conflicts and the like come back as
+      // a translated JSON:API error detail that tells the user what to fix.
+      let message = tr('errors.submit', 'Could not save the article.');
+      try {
+        const detail = err && err.response && err.response.errors && err.response.errors[0] && err.response.errors[0].detail;
+        if (detail) message = detail;
+      } catch (e) {}
+      showError(message);
       console.error('[linkrobins/wiki] save failed:', err);
       m.redraw();
     };
 
     if (this.editing && this.article) {
-      updateArticle(this.article, { title, content: bodyText, relationships: { category } }).then(done).catch(fail);
+      updateArticle(this.article, { title, slug, faq, content: bodyText, relationships: { category } }).then(done).catch(fail);
     } else {
-      createArticle(title, bodyText, category).then(done).catch(fail);
+      createArticle(title, bodyText, category, slug, faq).then(done).catch(fail);
     }
   }
 
@@ -267,7 +369,7 @@ export default class WikiComposePage extends Page {
       if (wikiComposerOpenFor(this._context()) && app.composer && app.composer.close) app.composer.close();
     } catch (e) {}
     if (this.editing && this.article) {
-      m.route.set(basePath() + BASE_PATH + '/' + encodeURIComponent(this.article.id()));
+      m.route.set(articleHref(this.article));
     } else {
       m.route.set(basePath() + BASE_PATH);
     }

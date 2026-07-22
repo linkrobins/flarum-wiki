@@ -152,8 +152,11 @@
     margin-bottom: 16px;
     padding: 10px 14px;
     border-radius: 6px;
-    background: fade(#b71c1c, 8%);
-    color: var(--alert-error-color, #b71c1c);
+    // The alert variables are a bg/fg PAIR: --alert-error-color alone is the
+    // text-on-alert color (white), which is invisible over a pale tint on the
+    // light theme. Use both halves so it reads on every theme.
+    background: var(--alert-error-bg, #d83e3e);
+    color: var(--alert-error-color, #fff);
     font-size: 0.9rem;
 }
 
@@ -301,8 +304,8 @@
     font-weight: 600;
 }
 
-// On narrow screens the rail can't sit beside the article, so stack it above
-// the content as a static contents box.
+// On narrow screens the rail can't sit beside the article; the sticky
+// contents bar below replaces it entirely.
 @media (max-width: 767px) {
     .LinkRobinsWiki-articleLayout {
         flex-direction: column;
@@ -316,16 +319,162 @@
         width: 100%;
     }
     .LinkRobinsWiki-tocRail {
-        order: -1;
-        position: static;
-        flex-basis: auto;
-        width: 100%;
-        max-height: none;
-        margin-bottom: 20px;
-        padding: 12px 14px;
-        background: var(--control-bg, rgba(127, 127, 127, 0.06));
-        border-radius: 6px;
+        display: none;
     }
+}
+
+// --- Mobile contents bar ---------------------------------------------
+// Phone replacement for the side rail: a bar that pins just under the fixed
+// titlebar, with the article title and a hamburger that unfolds the contents,
+// so they stay reachable from anywhere in the article. Pinning is done from
+// the page's scroll handler (`is-pinned` + inline left/width/height), NOT
+// position: sticky: core puts `overflow-x: hidden` on the body at phone
+// width for the drawer, which keeps sticky from ever engaging.
+
+.LinkRobinsWiki-mobileToc {
+    display: none;
+}
+
+@media (max-width: 767px) {
+    .LinkRobinsWiki-mobileToc {
+        display: block;
+        margin-bottom: 16px;
+    }
+
+    .LinkRobinsWiki-mobileToc-inner {
+        background: var(--body-bg, #fff);
+        border: 1px solid var(--control-bg, rgba(127, 127, 127, 0.18));
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    // The in-flow slot keeps its height (inline style) as a spacer; the bar
+    // itself rides fixed below the titlebar, aligned to the slot's left/width
+    // (also inline).
+    .LinkRobinsWiki-mobileToc.is-pinned .LinkRobinsWiki-mobileToc-inner {
+        position: fixed;
+        top: calc(var(--header-height-phone, var(--header-height, 46px)) + 6px);
+        z-index: 10;
+    }
+
+    .LinkRobinsWiki-mobileToc-bar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 10px 14px;
+        background: none;
+        border: 0;
+        color: var(--text-color, inherit);
+        font-weight: 600;
+        text-align: left;
+    }
+
+    .LinkRobinsWiki-mobileToc-title {
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        // Scale with the font-sizer reading control; a no-op (x1) without it.
+        font-size: calc(0.95rem * var(--lr-text-scale, 1));
+    }
+
+    .LinkRobinsWiki-mobileToc-icon {
+        flex: 0 0 auto;
+        color: var(--muted-color, #888);
+    }
+
+    .LinkRobinsWiki-mobileToc-panel {
+        max-height: 55vh;
+        overflow-y: auto;
+        padding: 10px 14px 12px;
+        border-top: 1px solid var(--control-bg, rgba(127, 127, 127, 0.18));
+    }
+}
+
+// --- FAQ -------------------------------------------------------------
+// Optional per-article accordion under the body. Native <details> handles
+// expand/collapse; only the marker is restyled.
+
+.LinkRobinsWiki-faq {
+    border-top: 1px solid var(--control-bg, rgba(0, 0, 0, 0.08));
+    padding-top: 16px;
+    margin-bottom: 24px;
+}
+
+.LinkRobinsWiki-faq-heading {
+    margin: 0 0 12px;
+    // Scale with the font-sizer reading control; a no-op (x1) without it.
+    font-size: calc(1.1rem * var(--lr-text-scale, 1));
+}
+
+.LinkRobinsWiki-faq-item {
+    border: 1px solid var(--control-bg, rgba(127, 127, 127, 0.18));
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+
+.LinkRobinsWiki-faq-question {
+    // Suppress the native disclosure marker; the caret icon replaces it.
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    font-weight: 600;
+    font-size: calc(0.95rem * var(--lr-text-scale, 1));
+
+    &::-webkit-details-marker {
+        display: none;
+    }
+}
+
+.LinkRobinsWiki-faq-caret {
+    flex: 0 0 auto;
+    color: var(--muted-color, #888);
+    transition: transform 0.15s;
+}
+
+.LinkRobinsWiki-faq-item[open] > .LinkRobinsWiki-faq-question .LinkRobinsWiki-faq-caret {
+    transform: rotate(90deg);
+}
+
+.LinkRobinsWiki-faq-answer {
+    padding: 0 14px 12px;
+}
+
+// The compose-page FAQ editor: one card per Q&A pair.
+
+.LinkRobinsWiki-faqEditor-entry {
+    border: 1px solid var(--control-bg, rgba(127, 127, 127, 0.18));
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+
+    .FormControl {
+        margin-bottom: 8px;
+    }
+}
+
+.LinkRobinsWiki-faqEditor-remove {
+    // A plain muted button; NOT Button--link + --alert-error-color, whose
+    // text color is white-on-alert and vanishes on hover in light mode.
+    background: none;
+    border: 0;
+    padding: 0;
+    color: var(--muted-color, #888);
+    font-size: 0.85rem;
+    cursor: pointer;
+
+    &:hover {
+        color: #d83e3e;
+    }
+}
+
+.LinkRobinsWiki-faqEditor-add {
+    margin-top: 2px;
 }
 
 // --- Revision history ------------------------------------------------

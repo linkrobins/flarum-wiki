@@ -67,8 +67,14 @@ export function postComment(article: any, content: string): Promise<any> {
 
 // --- Writes (store records: cached, reactive, relationship-aware) --------
 
-export function createArticle(title: string, body: string, category: WikiCategory | null): Promise<WikiArticle> {
-  return app.store.createRecord('linkrobins-wiki-articles').save({ title, content: body, relationships: { category: category || null } });
+export function createArticle(
+  title: string,
+  body: string,
+  category: WikiCategory | null,
+  slug = '',
+  faq: { question: string; answer: string }[] = []
+): Promise<WikiArticle> {
+  return app.store.createRecord('linkrobins-wiki-articles').save({ title, slug, faq, content: body, relationships: { category: category || null } });
 }
 
 export function updateArticle(article: WikiArticle, attrs: Record<string, any>): Promise<WikiArticle> {

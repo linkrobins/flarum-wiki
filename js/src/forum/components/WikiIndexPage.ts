@@ -3,7 +3,7 @@ import LoadingIndicator from 'flarum/common/components/LoadingIndicator';
 import PageStructure from 'flarum/forum/components/PageStructure';
 import WikiIndexSidebar from './WikiIndexSidebar';
 import { tr } from '../utils/translate';
-import { basePath, BASE_PATH, formatDate, safeNavigate, readForumAttribute } from '../utils/helpers';
+import { basePath, BASE_PATH, articleHref, formatDate, safeNavigate, readForumAttribute } from '../utils/helpers';
 import { canCreateWikiArticle } from '../utils/permissions';
 import { loadArticles, loadArticle, loadCategories } from '../utils/api';
 import { parseIndexLayout, WikiBlock } from '../utils/indexLayout';
@@ -269,7 +269,7 @@ export default class WikiIndexPage extends Page {
   _renderRow(article: any) {
     const user = article.user && article.user();
     const cat = article.category && article.category();
-    const href = basePath() + BASE_PATH + '/' + encodeURIComponent(article.id());
+    const href = articleHref(article);
     const isDeleted = !!(article.isDeleted && article.isDeleted());
 
     return m(

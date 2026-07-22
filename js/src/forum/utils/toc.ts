@@ -114,16 +114,32 @@ export function processWikiHeadings(bodyEl: Element | null): WikiTocEntry[] {
   return entries;
 }
 
-// Smooth-scroll to a heading, offsetting for the fixed forum header so the
+// The height of the chrome actually overlaying the top of the viewport. On
+// desktop that's the fixed .App-header; on phones the header element is inside
+// the drawer (static), and the fixed titlebar's height is the
+// --header-height-phone custom property instead.
+export function fixedChromeHeight(): number {
+  const header = document.querySelector('.App-header');
+  if (header && getComputedStyle(header).position === 'fixed') {
+    return header.getBoundingClientRect().height;
+  }
+  const v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-height-phone'));
+  return isNaN(v) ? 46 : v;
+}
+
+// Smooth-scroll to a heading, offsetting for the fixed forum chrome so the
 // target isn't hidden underneath it.
 export function scrollToAnchor(id: string): void {
   if (!id) return;
   const el = document.getElementById(id);
   if (!el) return;
 
-  let offsetY = el.getBoundingClientRect().top + window.scrollY;
-  const header = document.querySelector('.App-header');
-  if (header) offsetY -= header.getBoundingClientRect().height;
+  let offsetY = el.getBoundingClientRect().top + window.scrollY - fixedChromeHeight();
+  // The phone contents bar pins below the titlebar once the page scrolls, so
+  // any anchor target will end up under it too. Its row measures 0 on
+  // desktop, where the bar is display: none.
+  const bar = document.querySelector('.LinkRobinsWiki-mobileToc-bar');
+  if (bar) offsetY -= bar.getBoundingClientRect().height;
   offsetY -= 12;
 
   try {
