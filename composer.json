@@ -4,7 +4,7 @@
     "type": "flarum-extension",
     "license": "MIT",
     "keywords": ["flarum", "wiki", "knowledge-base", "documentation"],
-    "homepage": "https://linkrobins.com",
+    "homepage": "https://linkrobins.com/extensions/wiki",
     "support": {
         "issues": "https://github.com/linkrobins/flarum-wiki/issues",
         "source": "https://github.com/linkrobins/flarum-wiki"
