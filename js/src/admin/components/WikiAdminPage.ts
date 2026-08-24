@@ -59,6 +59,7 @@ export default class WikiAdminPage extends ExtensionPage {
           this._shortcodeRow('[article id="3"]', 'shortcode_article'),
           this._shortcodeRow('[categories]', 'shortcode_categories'),
           this._shortcodeRow('# Heading', 'shortcode_heading'),
+          this._shortcodeRow('[Label](https://example.com)', 'shortcode_link'),
         ]),
       ]),
 

@@ -197,12 +197,60 @@ export default class WikiIndexPage extends Page {
     (block.lines || []).forEach((line, idx) => {
       const t = line.trim();
       if (t === '') return;
-      if (t.indexOf('### ') === 0) out.push(m('h3', { key: idx }, t.slice(4)));
-      else if (t.indexOf('## ') === 0) out.push(m('h2', { key: idx }, t.slice(3)));
-      else if (t.indexOf('# ') === 0) out.push(m('h1', { className: 'LinkRobinsWiki-title', key: idx }, t.slice(2)));
-      else out.push(m('p', { key: idx }, t));
+      if (t.indexOf('### ') === 0) out.push(m('h3', { key: idx }, this._renderInline(t.slice(4))));
+      else if (t.indexOf('## ') === 0) out.push(m('h2', { key: idx }, this._renderInline(t.slice(3))));
+      else if (t.indexOf('# ') === 0) out.push(m('h1', { className: 'LinkRobinsWiki-title', key: idx }, this._renderInline(t.slice(2))));
+      else out.push(m('p', { key: idx }, this._renderInline(t)));
     });
     return m('div', { className: 'LinkRobinsWiki-prose' }, out);
+  }
+
+  /**
+   * Links inside prose. `[label](url)` and bare http(s) URLs become anchors;
+   * everything else stays a text node, so nothing an admin types can inject
+   * markup. Only http(s) and site-relative targets qualify: a `javascript:`
+   * address fails the scheme test and is left as the text it arrived as.
+   */
+  _renderInline(text: string): any[] {
+    const out: any[] = [];
+    const re = /\[([^\]\n]+)\]\(((?:https?:\/\/|\/)[^\s)]+)\)|https?:\/\/[^\s<>]+/g;
+    let last = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = re.exec(text))) {
+      let label: string;
+      let href: string;
+      let consumed = match[0].length;
+
+      if (match[1] !== undefined) {
+        label = match[1];
+        href = match[2];
+      } else {
+        // A bare URL keeps its trailing punctuation as prose, not address.
+        const stripped = match[0].replace(/[.,!?;:'"\)\]]+$/, '');
+        consumed = stripped.length;
+        label = href = stripped;
+      }
+
+      if (match.index > last) out.push(text.slice(last, match.index));
+      out.push(this._inlineLink(href, label));
+      last = match.index + consumed;
+      re.lastIndex = last;
+    }
+
+    if (last < text.length) out.push(text.slice(last));
+    return out;
+  }
+
+  _inlineLink(href: string, label: string) {
+    // Site-relative targets stay in the SPA. The href is kept exactly as the
+    // admin typed it: safeNavigate strips the forum's base path when present,
+    // so both `/wiki/getting-started` and `/forum/wiki/getting-started` route,
+    // and guessing at a prefix here would double it for one of them.
+    if (href.charAt(0) === '/') {
+      return m('a', { href, onclick: (e: any) => safeNavigate(href, e) }, label);
+    }
+    return m('a', { href, target: '_blank', rel: 'noopener nofollow ugc' }, label);
   }
 
   _renderArticleLink(article: any) {

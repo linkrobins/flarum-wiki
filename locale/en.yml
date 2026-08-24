@@ -16,6 +16,7 @@ linkrobins-wiki:
       shortcode_article: 'Link a single article by id.'
       shortcode_categories: 'Show the category list.'
       shortcode_heading: 'A heading (## and ### for smaller).'
+      shortcode_link: 'A link. Bare web addresses become links too.'
     toc:
       heading: 'Table of contents'
       intro: 'Show an automatic table of contents beside each article, built from its headings.'
