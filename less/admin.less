@@ -2,10 +2,6 @@
     .helpText {
         margin-bottom: 12px;
     }
-
-    > .Button {
-        margin-bottom: 16px;
-    }
 }
 
 .LinkRobinsWikiAdmin-empty {
@@ -51,6 +47,21 @@
 
 .LinkRobinsWikiAdmin-section {
     margin-bottom: 32px;
+
+    // A setting's .Form-group brings no bottom margin of its own, so anything
+    // following one sits flush against the field: the next setting, or the
+    // submit button. 16px is the gap the shortcode panel already gives the
+    // index layout's button.
+    > .Form-group + .Form-group,
+    > .Form-group + .Button {
+        margin-top: 16px;
+    }
+
+    // A button that introduces the rest of its section, rather than closing it,
+    // needs the same gap ahead of the table or empty-state panel below it.
+    > .Button:not(:last-child) {
+        margin-bottom: 16px;
+    }
 }
 
 .LinkRobinsWikiAdmin-section textarea.FormControl {
