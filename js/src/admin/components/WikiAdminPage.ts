@@ -30,7 +30,12 @@ export default class WikiAdminPage extends ExtensionPage {
   content() {
     return m('div', { className: 'ExtensionPage-settings' }, [
       m('div', { className: 'container' }, [
-        m('div', { className: 'LinkRobinsWikiAdmin' }, [this._renderIndexLayout(), this._renderToc(), this._renderCategories()]),
+        m('div', { className: 'LinkRobinsWikiAdmin' }, [
+          this._renderIndexLayout(),
+          this._renderLayout(),
+          this._renderToc(),
+          this._renderCategories(),
+        ]),
       ]),
     ]);
   }
@@ -69,6 +74,38 @@ export default class WikiAdminPage extends ExtensionPage {
 
   _shortcodeRow(code: string, key: string) {
     return m('li', [m('code', code), ' — ', t('linkrobins-wiki.admin.index_layout.' + key)]);
+  }
+
+  // --- Layout ----------------------------------------------------------
+
+  _renderLayout() {
+    return m('section', { className: 'LinkRobinsWikiAdmin-section' }, [
+      m('h2', t('linkrobins-wiki.admin.layout.heading')),
+      m('p', { className: 'helpText' }, t('linkrobins-wiki.admin.layout.intro')),
+
+      this.buildSettingComponent({
+        type: 'select',
+        setting: 'linkrobins-wiki.nav_position',
+        default: 'sections',
+        options: {
+          top: t('linkrobins-wiki.admin.layout.nav_position_top'),
+          below_all: t('linkrobins-wiki.admin.layout.nav_position_below_all'),
+          sections: t('linkrobins-wiki.admin.layout.nav_position_sections'),
+          bottom: t('linkrobins-wiki.admin.layout.nav_position_bottom'),
+        },
+        label: t('linkrobins-wiki.admin.layout.nav_position_label'),
+        help: t('linkrobins-wiki.admin.layout.nav_position_help'),
+      }),
+
+      this.buildSettingComponent({
+        type: 'boolean',
+        setting: 'linkrobins-wiki.full_width',
+        label: t('linkrobins-wiki.admin.layout.full_width_label'),
+        help: t('linkrobins-wiki.admin.layout.full_width_help'),
+      }),
+
+      this.submitButton(),
+    ]);
   }
 
   // --- Table of contents -----------------------------------------------

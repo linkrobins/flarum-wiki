@@ -3,7 +3,17 @@ import LoadingIndicator from 'flarum/common/components/LoadingIndicator';
 import PageStructure from 'flarum/forum/components/PageStructure';
 import WikiIndexSidebar from './WikiIndexSidebar';
 import { tr } from '../utils/translate';
-import { basePath, BASE_PATH, articleHref, formatDate, safeNavigate, readForumAttribute } from '../utils/helpers';
+import {
+  basePath,
+  BASE_PATH,
+  articleHref,
+  formatDate,
+  safeNavigate,
+  readForumAttribute,
+  fullWidth,
+  pageClassName,
+  emptySidebar,
+} from '../utils/helpers';
 import { canCreateWikiArticle } from '../utils/permissions';
 import { loadArticles, loadArticle, loadCategories } from '../utils/api';
 import { parseIndexLayout, WikiBlock } from '../utils/indexLayout';
@@ -132,8 +142,10 @@ export default class WikiIndexPage extends Page {
     return m(
       PageStructure,
       {
-        className: 'IndexPage LinkRobinsWiki-page',
-        sidebar: () => this._renderSidebar(),
+        className: pageClassName('IndexPage LinkRobinsWiki-page'),
+        // In full-width mode the real sidebar is never built, so its category
+        // request never fires; see emptySidebar() for why it is not just null.
+        sidebar: fullWidth() ? emptySidebar : () => this._renderSidebar(),
       },
       m('div', { className: 'LinkRobinsWiki-container' }, this._renderBody())
     );

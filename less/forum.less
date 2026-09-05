@@ -860,3 +860,16 @@
     font-style: italic;
     color: var(--muted-color, #888);
 }
+
+// Full-width mode: the admin has turned the forum sidebar off for wiki pages.
+// PageStructure always emits a .Page-sidebar element even with no sidebar
+// callback, so collapse the column as well as hiding the empty div. The width
+// and gap are custom properties on .Page, which is where our class lands.
+.LinkRobinsWiki-page--full {
+    --sidebar-width: 0;
+    --gap: 0;
+
+    > .Page-main > .Page-container > .Page-sidebar {
+        display: none;
+    }
+}

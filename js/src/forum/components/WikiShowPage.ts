@@ -6,7 +6,19 @@ import PageStructure from 'flarum/forum/components/PageStructure';
 import WikiIndexSidebar from './WikiIndexSidebar';
 import WikiComments from './WikiComments';
 import { tr, trText } from '../utils/translate';
-import { basePath, BASE_PATH, articleHref, articleSegment, executeContentScripts, formatDate, userLink, showError } from '../utils/helpers';
+import {
+  basePath,
+  BASE_PATH,
+  articleHref,
+  articleSegment,
+  executeContentScripts,
+  formatDate,
+  userLink,
+  showError,
+  fullWidth,
+  pageClassName,
+  emptySidebar,
+} from '../utils/helpers';
 import { canEditWikiArticles, canViewWikiHistory } from '../utils/permissions';
 import { loadArticle, loadRevisions, WIKI_PAGE_LIMIT } from '../utils/api';
 import { lineDiff, foldContext, hasChanges, DiffLine } from '../utils/diff';
@@ -130,15 +142,17 @@ export default class WikiShowPage extends Page {
     return m(
       PageStructure,
       {
-        className: 'IndexPage LinkRobinsWiki-page LinkRobinsWiki-page--show',
-        sidebar: () => {
-          try {
-            const cat = this.article && this.article.category && this.article.category();
-            return m(WikiIndexSidebar, { className: 'LinkRobinsWiki-sidebar', activeCategory: cat ? cat.id() : null });
-          } catch (e) {
-            return null;
-          }
-        },
+        className: pageClassName('IndexPage LinkRobinsWiki-page LinkRobinsWiki-page--show'),
+        sidebar: fullWidth()
+          ? emptySidebar
+          : () => {
+              try {
+                const cat = this.article && this.article.category && this.article.category();
+                return m(WikiIndexSidebar, { className: 'LinkRobinsWiki-sidebar', activeCategory: cat ? cat.id() : null });
+              } catch (e) {
+                return null;
+              }
+            },
       },
       m('div', { className: 'LinkRobinsWiki-container' }, this._renderContent())
     );

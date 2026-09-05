@@ -5,7 +5,7 @@ import Button from 'flarum/common/components/Button';
 import PageStructure from 'flarum/forum/components/PageStructure';
 import WikiIndexSidebar from './WikiIndexSidebar';
 import { tr } from '../utils/translate';
-import { basePath, BASE_PATH, articleHref, showError } from '../utils/helpers';
+import { basePath, BASE_PATH, articleHref, showError, fullWidth, pageClassName, emptySidebar } from '../utils/helpers';
 import { canCreateWikiArticle } from '../utils/permissions';
 import { loadArticle, loadCategories, createArticle, updateArticle } from '../utils/api';
 import { wikiComposerAvailable, wikiComposerOpenFor, openWikiComposer, wikiComposerPreview } from '../utils/composer';
@@ -97,14 +97,16 @@ export default class WikiComposePage extends Page {
     return m(
       PageStructure,
       {
-        className: 'IndexPage LinkRobinsWiki-page LinkRobinsWiki-page--compose',
-        sidebar: () => {
-          try {
-            return m(WikiIndexSidebar, { className: 'LinkRobinsWiki-sidebar', activeCategory: this.categoryId || null });
-          } catch (e) {
-            return null;
-          }
-        },
+        className: pageClassName('IndexPage LinkRobinsWiki-page LinkRobinsWiki-page--compose'),
+        sidebar: fullWidth()
+          ? emptySidebar
+          : () => {
+              try {
+                return m(WikiIndexSidebar, { className: 'LinkRobinsWiki-sidebar', activeCategory: this.categoryId || null });
+              } catch (e) {
+                return null;
+              }
+            },
       },
       m('div', { className: 'LinkRobinsWiki-container' }, this._renderContent())
     );

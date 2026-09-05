@@ -38,7 +38,19 @@ return [
         // least this many headings so short articles don't get a stub rail.
         ->default('linkrobins-wiki.toc_enabled', true)
         ->default('linkrobins-wiki.toc_min_headings', 2)
+        // Where the global "Wiki" link sits in the index sidebar nav, and
+        // whether wiki pages drop that sidebar and use the full width.
+        ->default('linkrobins-wiki.nav_position', 'sections')
+        ->default('linkrobins-wiki.full_width', false)
         ->serializeToForum('linkrobinsWikiIndexLayout', 'linkrobins-wiki.index_layout')
+        ->serializeToForum(
+            'linkrobinsWikiNavPosition',
+            'linkrobins-wiki.nav_position',
+            // An unset setting arrives as '', which is not one of the four
+            // positions; fall back rather than let the frontend guess.
+            fn ($value) => in_array($value, ['top', 'below_all', 'sections', 'bottom'], true) ? $value : 'sections'
+        )
+        ->serializeToForum('linkrobinsWikiFullWidth', 'linkrobins-wiki.full_width', fn ($value) => (bool) $value)
         ->serializeToForum('linkrobinsWikiTocEnabled', 'linkrobins-wiki.toc_enabled', fn ($value) => (bool) $value)
         ->serializeToForum('linkrobinsWikiTocMinHeadings', 'linkrobins-wiki.toc_min_headings', fn ($value) => max(1, (int) $value)),
 
