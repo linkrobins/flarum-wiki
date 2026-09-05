@@ -7,6 +7,7 @@ use LinkRobins\Wiki\Api\Resource\WikiArticleResource;
 use LinkRobins\Wiki\Api\Resource\WikiCategoryResource;
 use LinkRobins\Wiki\Api\Resource\WikiCommentResource;
 use LinkRobins\Wiki\Api\Resource\WikiRevisionResource;
+use LinkRobins\Wiki\Search\ArticleFulltextFilter;
 use LinkRobins\Wiki\Search\ArticleSearcher;
 use LinkRobins\Wiki\Search\CommentSearcher;
 use LinkRobins\Wiki\Search\Filter as Filters;
@@ -70,6 +71,9 @@ return [
 
     (new Extend\SearchDriver(DatabaseSearchDriver::class))
         ->addSearcher(WikiArticle::class, ArticleSearcher::class)
+        // Without a fulltext filter a filter[q] on articles is silently
+        // ignored, so nothing could search the wiki at all.
+        ->setFulltext(ArticleSearcher::class, ArticleFulltextFilter::class)
         ->addFilter(ArticleSearcher::class, Filters\CategoryIdFilter::class)
         ->addSearcher(WikiRevision::class, RevisionSearcher::class)
         ->addFilter(RevisionSearcher::class, Filters\ArticleIdFilter::class)

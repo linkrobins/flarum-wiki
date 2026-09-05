@@ -1,4 +1,6 @@
 import Page from 'flarum/common/components/Page';
+import Button from 'flarum/common/components/Button';
+import extractText from 'flarum/common/utils/extractText';
 import LoadingIndicator from 'flarum/common/components/LoadingIndicator';
 import PageStructure from 'flarum/forum/components/PageStructure';
 import WikiIndexSidebar from './WikiIndexSidebar';
@@ -24,6 +26,11 @@ export default class WikiIndexPage extends Page {
   articles: any[] = [];
   category: string | null = null;
 
+  // Search state. `query` is what the list was loaded with (from the route);
+  // `queryDraft` is what is currently in the box, so typing doesn't refetch.
+  query = '';
+  queryDraft = '';
+
   // Custom-layout state.
   layout: string = '';
   blocks: WikiBlock[] = [];
@@ -40,7 +47,8 @@ export default class WikiIndexPage extends Page {
 
   onbeforeupdate(vnode: any) {
     const next = m.route.param('category') || null;
-    if (next !== this.category) {
+    const nextQuery = (m.route.param('q') || '').toString();
+    if (next !== this.category || nextQuery !== this.query) {
       Promise.resolve().then(() => this._init());
     }
     return true;
@@ -48,8 +56,18 @@ export default class WikiIndexPage extends Page {
 
   _init() {
     this.category = m.route.param('category') || null;
+    this.query = (m.route.param('q') || '').toString();
+    this.queryDraft = this.query;
     this.error = null;
     this.blockData = {};
+
+    // A search always shows results, whatever the custom layout says, for the
+    // same reason a category filter does.
+    if (this.query.trim()) {
+      this.blocks = [];
+      this._loadList();
+      return;
+    }
 
     // A category filter (from the sidebar) always shows that category's list,
     // regardless of any custom homepage layout.
@@ -83,9 +101,15 @@ export default class WikiIndexPage extends Page {
   _loadList() {
     this.loading = true;
     m.redraw();
-    const params: any = { page: { limit: 25 } };
+    const params: any = { page: { limit: 25 }, filter: {} };
     if (this.category) {
-      params.filter = { categoryId: this.category };
+      params.filter.categoryId = this.category;
+    }
+    if (this.query.trim()) {
+      params.filter.q = this.query.trim();
+      // The default sort stays: the fulltext filter adds its title-first
+      // ordering before the sort is applied, so title matches lead and recency
+      // breaks ties.
     }
     loadArticles(params)
       .then((articles: any[]) => {
@@ -161,20 +185,72 @@ export default class WikiIndexPage extends Page {
   }
 
   _renderBody() {
-    // Custom homepage layout (only when no category filter is active).
-    if (!this.category && this.blocks.length) {
-      return m(
-        'div',
-        { className: 'LinkRobinsWiki-home' },
-        this.blocks.map((b, i) => this._renderBlock(b, i))
-      );
+    // Custom homepage layout (only when no category filter or search is on).
+    if (!this.category && !this.query.trim() && this.blocks.length) {
+      return [
+        this._renderSearch(),
+        m(
+          'div',
+          { className: 'LinkRobinsWiki-home' },
+          this.blocks.map((b, i) => this._renderBlock(b, i))
+        ),
+      ];
     }
 
-    return [this._renderHeader(), this._renderList(this.articles)];
+    return [this._renderSearch(), this._renderHeader(), this._renderList(this.articles)];
+  }
+
+  // The wiki's own search box. Submitting puts the term in the URL (?q=), so a
+  // result page can be linked, bookmarked and gone back to.
+  _renderSearch() {
+    const submit = (e?: any) => {
+      if (e) e.preventDefault();
+      const value = (this.queryDraft || '').trim();
+      const params: any = {};
+      if (value) params.q = value;
+      if (this.category) params.category = this.category;
+      m.route.set(basePath() + BASE_PATH, params);
+    };
+
+    return m('form', { className: 'LinkRobinsWiki-search', onsubmit: submit, role: 'search' }, [
+      m('input', {
+        className: 'FormControl LinkRobinsWiki-search-input',
+        type: 'search',
+        value: this.queryDraft,
+        placeholder: extractText(tr('search.placeholder', 'Search the wiki')),
+        'aria-label': extractText(tr('search.placeholder', 'Search the wiki')),
+        oninput: (e: any) => {
+          this.queryDraft = e.target.value;
+        },
+      }),
+      m(Button, { className: 'Button LinkRobinsWiki-search-go', type: 'submit', icon: 'fas fa-search' }, tr('search.button', 'Search')),
+      this.query.trim()
+        ? m(
+            Button,
+            {
+              className: 'Button Button--link LinkRobinsWiki-search-clear',
+              onclick: () => {
+                this.queryDraft = '';
+                submit();
+              },
+            },
+            tr('search.clear', 'Clear')
+          )
+        : null,
+    ]);
   }
 
   _renderHeader() {
     const cat = this.category ? this.categories.find((c: any) => String(c.id()) === String(this.category)) : null;
+    if (this.query.trim()) {
+      return m('header', { className: 'LinkRobinsWiki-header' }, [
+        m('h1', { className: 'LinkRobinsWiki-title' }, [
+          m('i', { className: 'fas fa-search' }),
+          ' ',
+          tr('search.results_heading', 'Results for "{query}"', { query: this.query.trim() }),
+        ]),
+      ]);
+    }
     const label = cat ? cat.name() : tr('nav', 'Wiki');
     return m('header', { className: 'LinkRobinsWiki-header' }, [
       m('h1', { className: 'LinkRobinsWiki-title' }, [m('i', { className: 'fas fa-book' }), ' ', label]),
@@ -311,6 +387,11 @@ export default class WikiIndexPage extends Page {
       return m('div', { className: 'LinkRobinsWiki-empty' }, tr('errors.load_articles', 'Could not load articles.'));
     }
     if (!articles || !articles.length) {
+      // "Nothing yet, write one" is the wrong prompt when a search simply
+      // found nothing.
+      if (this.query.trim()) {
+        return m('div', { className: 'LinkRobinsWiki-empty' }, tr('search.empty', 'No articles match "{query}".', { query: this.query.trim() }));
+      }
       return m(
         'div',
         { className: 'LinkRobinsWiki-empty' },
