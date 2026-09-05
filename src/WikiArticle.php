@@ -44,10 +44,12 @@ class WikiArticle extends AbstractModel implements Formattable
     protected $fillable = [
         'title',
         'content',
+        'position',
     ];
 
     protected $casts = [
         'last_edited_at' => 'datetime',
+        'position' => 'integer',
     ];
 
     /** @var list<string> */

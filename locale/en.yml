@@ -95,6 +95,9 @@ linkrobins-wiki:
       slug_label: 'URL slug'
       slug_placeholder: 'e.g. getting-started'
       slug_help: "Used in the article's URL. Leave blank to generate it from the title."
+      position_label: Position
+      position_placeholder: 'e.g. 1'
+      position_help: 'Orders this article within its category, lowest first. Leave blank and it sits after the ordered ones, newest first.'
       category_label: 'Category'
       no_category: 'No category'
       body_label: 'Content'

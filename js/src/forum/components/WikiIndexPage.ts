@@ -105,6 +105,9 @@ export default class WikiIndexPage extends Page {
     const params: any = { page: { limit: 25 }, filter: {} };
     if (this.category) {
       params.filter.categoryId = this.category;
+      // A category is the unit people arrange by hand, so its listing leads
+      // with the manual order and falls back to recency for the rest.
+      params.sort = 'position,-lastEditedAt';
     }
     if (this.query.trim()) {
       params.filter.q = this.query.trim();

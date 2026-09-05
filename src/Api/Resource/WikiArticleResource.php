@@ -92,6 +92,10 @@ class WikiArticleResource extends AbstractDatabaseResource
     public function sorts(): array
     {
         return [
+            // Manual order. The null-last behaviour lives in ArticleSearcher,
+            // since this model has a searcher and the Index endpoint therefore
+            // never applies these sorts itself.
+            SortColumn::make('position'),
             SortColumn::make('lastEditedAt')->descendingAlias('latest'),
             SortColumn::make('createdAt')->descendingAlias('newest')->ascendingAlias('oldest'),
             SortColumn::make('title'),
@@ -216,6 +220,12 @@ class WikiArticleResource extends AbstractDatabaseResource
                 ->property('updated_at'),
             Schema\DateTime::make('lastEditedAt')
                 ->property('last_edited_at')
+                ->nullable(),
+
+            // Optional manual order within a listing. Null sorts last, so an
+            // unpositioned article behaves exactly as it did before.
+            Schema\Integer::make('position')
+                ->writable()
                 ->nullable(),
 
             Schema\Integer::make('revisionCount')

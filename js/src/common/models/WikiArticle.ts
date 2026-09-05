@@ -10,6 +10,7 @@ import type WikiCategory from './WikiCategory';
 export default class WikiArticle extends Model {
   title = Model.attribute<string>('title');
   slug = Model.attribute<string | null>('slug');
+  position = Model.attribute<number | null>('position');
   faq = Model.attribute<{ question: string; answer: string; answerHtml: string }[]>('faq');
   content = Model.attribute<string>('content');
   contentHtml = Model.attribute<string>('contentHtml');
