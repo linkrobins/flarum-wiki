@@ -27,6 +27,12 @@ function parseAttrs(s: string): Record<string, string> {
  *   [articles ... title="Heading"]          optional heading above the list
  *   [article id="N"]                        link to one article
  *   [categories]                            the category list
+ *   [html] ... [/html]                      raw HTML, verbatim
+ *
+ * The [html] block is the one place markup passes through untouched. Only
+ * administrators can edit this setting, the same people who can already put
+ * arbitrary markup in core's custom header and footer, so the trust level is
+ * unchanged; everything else in the layout stays escaped.
  */
 export function parseIndexLayout(text: string): WikiBlock[] {
   const blocks: WikiBlock[] = [];
@@ -39,8 +45,30 @@ export function parseIndexLayout(text: string): WikiBlock[] {
     buf = [];
   };
 
+  let html: string[] | null = null;
+
   (text || '').split('\n').forEach((line) => {
-    const m = line.trim().match(/^\[(\w[\w-]*)((?:\s+[\w-]+=(?:"[^"]*"|'[^']*'|[^\s\]]+))*)\s*\]$/);
+    const trimmed = line.trim();
+
+    // Inside an [html] block every line is content, including ones that look
+    // like shortcodes, until the closing tag.
+    if (html !== null) {
+      if (trimmed.toLowerCase() === '[/html]') {
+        blocks.push({ type: 'html', attrs: {}, lines: html });
+        html = null;
+      } else {
+        html.push(line);
+      }
+      return;
+    }
+
+    if (trimmed.toLowerCase() === '[html]') {
+      flush();
+      html = [];
+      return;
+    }
+
+    const m = trimmed.match(/^\[(\w[\w-]*)((?:\s+[\w-]+=(?:"[^"]*"|'[^']*'|[^\s\]]+))*)\s*\]$/);
     if (m) {
       flush();
       blocks.push({ type: m[1].toLowerCase(), attrs: parseAttrs(m[2]) });
@@ -48,6 +76,13 @@ export function parseIndexLayout(text: string): WikiBlock[] {
       buf.push(line);
     }
   });
+
+  // An unclosed [html] still renders, rather than swallowing the rest of the
+  // page into nothing.
+  if (html !== null && html.length) {
+    blocks.push({ type: 'html', attrs: {}, lines: html });
+  }
+
   flush();
 
   return blocks;
