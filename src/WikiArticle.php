@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property int $id
+ * @property bool $is_draft
  * @property int|null $category_id
  * @property int|null $user_id
  * @property int|null $last_edited_by_user_id

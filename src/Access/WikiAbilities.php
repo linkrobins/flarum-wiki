@@ -3,6 +3,8 @@
 namespace LinkRobins\Wiki\Access;
 
 use Flarum\User\User;
+use Illuminate\Database\Eloquent\Builder;
+use LinkRobins\Wiki\WikiArticle;
 
 /**
  * Single source of truth for the wiki permission checks shared across the
@@ -44,7 +46,11 @@ class WikiAbilities
      * through ArticleSearcher, which never touches the resource's scope, so
      * both need the identical rule.
      */
-    public static function scopeVisibleDrafts($query, User $actor)
+    /**
+     * @param Builder<WikiArticle> $query
+     * @return Builder<WikiArticle>
+     */
+    public static function scopeVisibleDrafts(Builder $query, User $actor): Builder
     {
         if (self::isEditor($actor)) {
             return $query;
