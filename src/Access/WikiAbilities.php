@@ -36,6 +36,30 @@ class WikiAbilities
     }
 
     /**
+     * Limit a query to the articles this actor may see, draft-wise: everyone
+     * sees published articles, an author also sees their own drafts, and an
+     * editor sees every draft.
+     *
+     * Lives here rather than in the resource because the Index endpoint goes
+     * through ArticleSearcher, which never touches the resource's scope, so
+     * both need the identical rule.
+     */
+    public static function scopeVisibleDrafts($query, User $actor)
+    {
+        if (self::isEditor($actor)) {
+            return $query;
+        }
+
+        return $query->where(function ($query) use ($actor) {
+            $query->where('linkrobins_wiki_articles.is_draft', false);
+
+            if (! $actor->isGuest()) {
+                $query->orWhere('linkrobins_wiki_articles.user_id', $actor->id);
+            }
+        });
+    }
+
+    /**
      * Whether the actor may post comments on articles (admins always can).
      */
     public static function canComment(User $actor): bool

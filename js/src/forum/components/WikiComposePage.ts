@@ -27,6 +27,7 @@ export default class WikiComposePage extends Page {
   title = '';
   slug = '';
   position = '';
+  isDraft = false;
   body = '';
   categoryId: string = '';
   // FAQ entries being edited. `uid` is a client-side key so removals don't
@@ -59,6 +60,7 @@ export default class WikiComposePage extends Page {
             this.article = article;
             this.title = article.title() || '';
             this.slug = (article.slug && article.slug()) || '';
+            this.isDraft = !!(article.isDraft && article.isDraft());
             const pos = article.position && article.position();
             this.position = pos === null || pos === undefined ? '' : String(pos);
             this.body = article.content() || '';
@@ -161,6 +163,22 @@ export default class WikiComposePage extends Page {
             },
           }),
           m('div', { className: 'helpText' }, tr('compose.slug_help', "Used in the article's URL. Leave blank to generate it from the title.")),
+        ]),
+
+        m('div', { className: 'Form-group LinkRobinsWiki-draftToggle' }, [
+          m('label', { className: 'checkbox' }, [
+            m('input', {
+              type: 'checkbox',
+              checked: this.isDraft,
+              disabled: this.saving,
+              onchange: (e: any) => {
+                this.isDraft = e.target.checked;
+              },
+            }),
+            ' ',
+            tr('compose.draft_label', 'Save as a draft'),
+          ]),
+          m('div', { className: 'helpText' }, tr('compose.draft_help', 'A draft is visible only to you and to wiki editors until you publish it.')),
         ]),
 
         m('div', { className: 'Form-group' }, [
@@ -363,6 +381,7 @@ export default class WikiComposePage extends Page {
     // "first".
     const positionRaw = (this.position || '').trim();
     const position = positionRaw === '' ? null : parseInt(positionRaw, 10);
+    const isDraft = !!this.isDraft;
     const faq = this.faq
       .map((entry) => ({ question: (entry.question || '').trim(), answer: (entry.answer || '').trim() }))
       .filter((entry) => entry.question && entry.answer);
@@ -389,9 +408,9 @@ export default class WikiComposePage extends Page {
     };
 
     if (this.editing && this.article) {
-      updateArticle(this.article, { title, slug, position, faq, content: bodyText, relationships: { category } }).then(done).catch(fail);
+      updateArticle(this.article, { title, slug, position, isDraft, faq, content: bodyText, relationships: { category } }).then(done).catch(fail);
     } else {
-      createArticle(title, bodyText, category, slug, faq, position).then(done).catch(fail);
+      createArticle(title, bodyText, category, slug, faq, position, isDraft).then(done).catch(fail);
     }
   }
 

@@ -436,12 +436,13 @@ export default class WikiIndexPage extends Page {
     const cat = article.category && article.category();
     const href = articleHref(article);
     const isDeleted = !!(article.isDeleted && article.isDeleted());
+    const isDraft = !!(article.isDraft && article.isDraft());
 
     return m(
       'a',
       {
         href,
-        className: 'LinkRobinsWiki-row' + (isDeleted ? ' LinkRobinsWiki-row--deleted' : ''),
+        className: 'LinkRobinsWiki-row' + (isDeleted ? ' LinkRobinsWiki-row--deleted' : '') + (isDraft ? ' LinkRobinsWiki-row--draft' : ''),
         onclick: (e: any) => safeNavigate(href, e),
         key: 'article-' + article.id(),
       },
@@ -450,6 +451,7 @@ export default class WikiIndexPage extends Page {
           m('div', { className: 'LinkRobinsWiki-row-subject' }, [
             article.title() || tr('index.untitled', 'Untitled'),
             isDeleted ? m('span', { className: 'LinkRobinsWiki-row-deletedBadge' }, tr('index.deleted_badge', 'Deleted')) : null,
+            isDraft ? m('span', { className: 'LinkRobinsWiki-row-draftBadge' }, tr('index.draft_badge', 'Draft')) : null,
           ]),
           m('div', { className: 'LinkRobinsWiki-row-meta' }, [
             cat ? m('span', { className: 'LinkRobinsWiki-row-cat', style: 'color: ' + (cat.color() || 'inherit') }, cat.name()) : null,

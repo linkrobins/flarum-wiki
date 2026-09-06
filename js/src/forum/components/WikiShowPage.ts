@@ -182,6 +182,14 @@ export default class WikiShowPage extends Page {
         ? m('div', { className: 'LinkRobinsWiki-deletedNotice' }, tr('show.deleted_notice', 'This article is deleted. Only editors can see it.'))
         : null,
 
+      article.isDraft && article.isDraft()
+        ? m(
+            'div',
+            { className: 'LinkRobinsWiki-draftNotice' },
+            tr('show.draft_notice', 'This article is a draft. Only you and wiki editors can see it.')
+          )
+        : null,
+
       m('div', { className: 'LinkRobinsWiki-articleLayout' }, [
         m('div', { className: 'LinkRobinsWiki-articleMain' }, [
           m('header', { className: 'LinkRobinsWiki-articleHeader' }, [

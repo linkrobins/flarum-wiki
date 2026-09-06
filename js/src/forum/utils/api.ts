@@ -73,11 +73,12 @@ export function createArticle(
   category: WikiCategory | null,
   slug = '',
   faq: { question: string; answer: string }[] = [],
-  position: number | null = null
+  position: number | null = null,
+  isDraft = false
 ): Promise<WikiArticle> {
   return app.store
     .createRecord('linkrobins-wiki-articles')
-    .save({ title, slug, faq, position, content: body, relationships: { category: category || null } });
+    .save({ title, slug, faq, position, isDraft, content: body, relationships: { category: category || null } });
 }
 
 export function updateArticle(article: WikiArticle, attrs: Record<string, any>): Promise<WikiArticle> {

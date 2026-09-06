@@ -50,6 +50,11 @@ class ArticleSearcher extends AbstractSearcher
             $query->withTrashed();
         }
 
+        // The Index endpoint runs through here, not the resource's scope, so
+        // the draft rule has to be applied again or every listing and every
+        // search would leak unfinished articles.
+        WikiAbilities::scopeVisibleDrafts($query, $actor);
+
         return $query;
     }
 }

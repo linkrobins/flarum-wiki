@@ -93,6 +93,7 @@ linkrobins-wiki:
       empty: 'No articles to show.'
       untitled: 'Untitled'
       deleted_badge: 'Deleted'
+      draft_badge: Draft
       no_categories: 'No categories yet.'
     compose:
       title: 'New article'
@@ -114,6 +115,8 @@ linkrobins-wiki:
       discard_confirm: 'You have an unsaved article. Discard it?'
       submit_create: 'Publish article'
       submit_update: 'Save changes'
+      draft_label: 'Save as a draft'
+      draft_help: 'A draft is visible only to you and to wiki editors until you publish it.'
       faq_heading: 'FAQ'
       faq_help: 'Optional questions and answers shown under the article. Markdown is supported in answers.'
       faq_question_placeholder: 'Question'
@@ -122,6 +125,7 @@ linkrobins-wiki:
       faq_remove: 'Remove question'
     show:
       deleted_notice: 'This article is deleted. Only editors can see it.'
+      draft_notice: 'This article is a draft. Only you and wiki editors can see it.'
       toc_heading: 'Contents'
       faq_heading: 'Frequently asked questions'
       related_heading: 'Related articles'

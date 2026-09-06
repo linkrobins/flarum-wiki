@@ -952,3 +952,28 @@
         }
     }
 }
+
+// Draft treatment: the same muted, marked shape the deleted state uses, so an
+// unfinished article is obvious in a list and on its own page.
+.LinkRobinsWiki-draftNotice {
+    background: var(--control-bg);
+    color: var(--text-color);
+    padding: 8px 12px;
+    border-radius: var(--border-radius);
+    margin-bottom: 12px;
+}
+
+.LinkRobinsWiki-row--draft .LinkRobinsWiki-row-subject {
+    color: var(--muted-color);
+}
+
+.LinkRobinsWiki-row-draftBadge {
+    margin-left: 8px;
+    padding: 1px 6px;
+    border-radius: var(--border-radius);
+    background: var(--control-bg);
+    color: var(--muted-color);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}

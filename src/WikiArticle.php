@@ -45,11 +45,13 @@ class WikiArticle extends AbstractModel implements Formattable
         'title',
         'content',
         'position',
+        'is_draft',
     ];
 
     protected $casts = [
         'last_edited_at' => 'datetime',
         'position' => 'integer',
+        'is_draft' => 'boolean',
     ];
 
     /** @var list<string> */

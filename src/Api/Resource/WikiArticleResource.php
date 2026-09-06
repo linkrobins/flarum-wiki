@@ -52,6 +52,8 @@ class WikiArticleResource extends AbstractDatabaseResource
         if (WikiAbilities::isEditor($context->getActor())) {
             $query->withTrashed();
         }
+
+        WikiAbilities::scopeVisibleDrafts($query, $context->getActor());
     }
 
     /**
@@ -233,6 +235,21 @@ class WikiArticleResource extends AbstractDatabaseResource
             Schema\DateTime::make('lastEditedAt')
                 ->property('last_edited_at')
                 ->nullable(),
+
+            // Whether the article is still being written. Only someone who
+            // could edit the article can flip it, and the field is invisible
+            // to everyone else so a reader's payload never mentions drafts.
+            Schema\Boolean::make('isDraft')
+                ->property('is_draft')
+                // A model that has not round-tripped through the database yet
+                // has no value here, and Flarum's AbstractModel ignores an
+                // $attributes default, so cast rather than serialize null.
+                ->get(fn (WikiArticle $article) => (bool) $article->is_draft)
+                ->writable(fn (WikiArticle $article, FlarumContext $context) => $context->creating()
+                    || $context->getActor()->can('update', $article))
+                ->visible(fn (WikiArticle $article, FlarumContext $context) => $context->creating()
+                    || WikiAbilities::isEditor($context->getActor())
+                    || (! $context->getActor()->isGuest() && $context->getActor()->id === $article->user_id)),
 
             // Optional manual order within a listing. Null sorts last, so an
             // unpositioned article behaves exactly as it did before.
