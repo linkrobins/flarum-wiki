@@ -14,6 +14,7 @@ use LinkRobins\Wiki\Access\WikiAbilities;
 use LinkRobins\Wiki\Faq;
 use LinkRobins\Wiki\Slug;
 use LinkRobins\Wiki\WikiArticle;
+use LinkRobins\Wiki\WikiArticleSlug;
 use LinkRobins\Wiki\WikiCategory;
 use Psr\Log\LoggerInterface;
 use Tobyz\JsonApiServer\Context;
@@ -66,7 +67,18 @@ class WikiArticleResource extends AbstractDatabaseResource
             return $this->query($context)->find($id);
         }
 
-        return $this->query($context)->where('slug', $id)->first();
+        $article = $this->query($context)->where('slug', $id)->first();
+
+        if ($article) {
+            return $article;
+        }
+
+        // A slug the article used to answer to. Returning the article keeps
+        // shared links working; the frontend rewrites the address bar to the
+        // current slug on load, so the old URL is a redirect in effect.
+        $historic = WikiArticleSlug::query()->where('slug', $id)->value('article_id');
+
+        return $historic ? $this->query($context)->find($historic) : null;
     }
 
     public function endpoints(): array
