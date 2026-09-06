@@ -135,6 +135,33 @@ export default class WikiAdminPage extends ExtensionPage {
     ]);
   }
 
+  // --- Related articles -------------------------------------------------
+
+  _renderRelated() {
+    return m('section', { className: 'LinkRobinsWikiAdmin-section' }, [
+      m('h2', t('linkrobins-wiki.admin.related.heading')),
+      m('p', { className: 'helpText' }, t('linkrobins-wiki.admin.related.intro')),
+
+      this.buildSettingComponent({
+        type: 'boolean',
+        setting: 'linkrobins-wiki.related_enabled',
+        label: t('linkrobins-wiki.admin.related.enabled_label'),
+        help: t('linkrobins-wiki.admin.related.enabled_help'),
+      }),
+
+      this.buildSettingComponent({
+        type: 'number',
+        setting: 'linkrobins-wiki.related_limit',
+        min: 1,
+        max: 20,
+        label: t('linkrobins-wiki.admin.related.limit_label'),
+        help: t('linkrobins-wiki.admin.related.limit_help'),
+      }),
+
+      this.submitButton(),
+    ]);
+  }
+
   // --- Categories ------------------------------------------------------
 
   _renderCategories() {

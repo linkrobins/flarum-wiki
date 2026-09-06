@@ -41,6 +41,10 @@ return [
         ->default('linkrobins-wiki.toc_min_headings', 2)
         // Where the global "Wiki" link sits in the index sidebar nav, and
         // whether wiki pages drop that sidebar and use the full width.
+        // Related articles: a short list of siblings from the same category
+        // under each article. Off means the section never renders.
+        ->default('linkrobins-wiki.related_enabled', true)
+        ->default('linkrobins-wiki.related_limit', 5)
         ->default('linkrobins-wiki.nav_position', 'sections')
         ->default('linkrobins-wiki.full_width', false)
         ->serializeToForum('linkrobinsWikiIndexLayout', 'linkrobins-wiki.index_layout')
@@ -52,6 +56,8 @@ return [
             fn ($value) => in_array($value, ['top', 'below_all', 'sections', 'bottom'], true) ? $value : 'sections'
         )
         ->serializeToForum('linkrobinsWikiFullWidth', 'linkrobins-wiki.full_width', fn ($value) => (bool) $value)
+        ->serializeToForum('linkrobinsWikiRelatedEnabled', 'linkrobins-wiki.related_enabled', fn ($value) => (bool) $value)
+        ->serializeToForum('linkrobinsWikiRelatedLimit', 'linkrobins-wiki.related_limit', fn ($value) => max(1, min(20, (int) $value)))
         ->serializeToForum('linkrobinsWikiTocEnabled', 'linkrobins-wiki.toc_enabled', fn ($value) => (bool) $value)
         ->serializeToForum('linkrobinsWikiTocMinHeadings', 'linkrobins-wiki.toc_min_headings', fn ($value) => max(1, (int) $value)),
 
