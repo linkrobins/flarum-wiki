@@ -13,6 +13,47 @@ export function readForumAttribute(key: string): any {
   return null;
 }
 
+// --- Layout settings --------------------------------------------------
+
+// Where the global "Wiki" nav link sits, as an ItemList priority. Core puts
+// "All Discussions" at 100 and flarum/tags puts its "Tags" link at -10, its
+// separator at -12 and the tag list at -14, so these four values give the
+// admin's chosen position without needing to know any of that.
+const NAV_PRIORITIES: Record<string, number> = {
+  top: 200,
+  below_all: 50,
+  sections: -11,
+  bottom: -1000,
+};
+
+export function navPriority(): number {
+  const value = String(readForumAttribute('linkrobinsWikiNavPosition') || 'sections');
+  const priority = NAV_PRIORITIES[value];
+  return priority === undefined ? NAV_PRIORITIES.sections : priority;
+}
+
+// When on, wiki pages drop the forum sidebar and use the whole container. Off
+// unless the attribute says otherwise, so an older backend keeps the sidebar.
+export function fullWidth(): boolean {
+  return !!readForumAttribute('linkrobinsWikiFullWidth');
+}
+
+// PageStructure always renders a .Page-sidebar, and pushes whatever the
+// sidebar callback returns through ItemList.toArray(). That converts a
+// non-object to Object(content), so a null becomes {} -- a bare object Mithril
+// then treats as a vnode and reads `.view` off, which blanks the whole page.
+// Omitting the callback entirely hits the same path. So full-width mode hands
+// it an empty element and the LESS collapses the column.
+export function emptySidebar(): any {
+  return m('div', { className: 'LinkRobinsWiki-sidebarOff' });
+}
+
+// Append the full-width modifier when the setting is on, so the LESS can
+// collapse the sidebar column and widen the content.
+export function pageClassName(base: string): string {
+  return fullWidth() ? base + ' LinkRobinsWiki-page--full' : base;
+}
+
 export function basePath(): string {
   try {
     return (app.forum && app.forum.attribute && app.forum.attribute('basePath')) || '';

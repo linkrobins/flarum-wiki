@@ -17,6 +17,17 @@ linkrobins-wiki:
       shortcode_categories: 'Show the category list.'
       shortcode_heading: 'A heading (## and ### for smaller).'
       shortcode_link: 'A link. Bare web addresses become links too.'
+    layout:
+      heading: 'Layout'
+      intro: 'Where the Wiki link sits in the forum sidebar, and how much of the page the wiki uses.'
+      nav_position_label: 'Wiki link position'
+      nav_position_help: 'Where the Wiki link appears in the sidebar navigation, alongside All Discussions and any links other extensions add.'
+      nav_position_top: 'Top of the list'
+      nav_position_below_all: 'Below All Discussions'
+      nav_position_sections: 'With the section links (default)'
+      nav_position_bottom: 'Bottom of the list'
+      full_width_label: 'Use the full page width'
+      full_width_help: 'When on, wiki pages drop the forum sidebar and run the full width of the page. The article contents panel is unaffected. Note that the category filter lives in that sidebar, so readers browse categories from the wiki home page instead.'
     toc:
       heading: 'Table of contents'
       intro: 'Show an automatic table of contents beside each article, built from its headings.'
