@@ -141,7 +141,14 @@ export default class WikiIndexPage extends Page {
       if (block.type === 'articles') {
         const params: any = { page: { limit: parseInt(block.attrs.limit, 10) || 25 } };
         const catId = block.attrs.category ? this._resolveCategoryId(block.attrs.category) : null;
-        if (catId) params.filter = { categoryId: catId };
+        if (catId) {
+          params.filter = { categoryId: catId };
+          // Same rule as the category listing page: a block that names a
+          // category shows it in the order it was arranged by hand. A block
+          // with no category stays on recency, which is what "[articles
+          // limit=5 title=Recent]" is for.
+          params.sort = 'position,-lastEditedAt';
+        }
         loadArticles(params)
           .then((arts: any[]) => {
             this.blockData[i] = arts || [];

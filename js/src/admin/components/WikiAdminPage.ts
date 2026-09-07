@@ -34,6 +34,7 @@ export default class WikiAdminPage extends ExtensionPage {
           this._renderIndexLayout(),
           this._renderLayout(),
           this._renderToc(),
+          this._renderRelated(),
           this._renderCategories(),
         ]),
       ]),
