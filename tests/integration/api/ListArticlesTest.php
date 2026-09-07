@@ -61,7 +61,7 @@ class ListArticlesTest extends TestCase
         );
 
         $this->assertEquals(200, $response->getStatusCode());
-        $this->assertEquals([1], $this->listedIds($response->getBody()->getContents()));
+        $this->assertEquals([1, 3, 4], $this->listedIds($response->getBody()->getContents()));
     }
 
     #[Test]
@@ -74,7 +74,7 @@ class ListArticlesTest extends TestCase
         );
 
         $this->assertEquals(200, $response->getStatusCode());
-        $this->assertEquals([1], $this->listedIds($response->getBody()->getContents()));
+        $this->assertEquals([1, 3, 4], $this->listedIds($response->getBody()->getContents()));
     }
 
     #[Test]
@@ -87,7 +87,7 @@ class ListArticlesTest extends TestCase
         );
 
         $this->assertEquals(200, $response->getStatusCode());
-        $this->assertEquals([1, 2], $this->listedIds($response->getBody()->getContents()));
+        $this->assertEquals([1, 2, 3, 4], $this->listedIds($response->getBody()->getContents()));
     }
 
     #[Test]
@@ -134,8 +134,10 @@ class ListArticlesTest extends TestCase
             json_decode($response->getBody()->getContents(), true)['data']
         );
 
-        $this->assertSame(['Ordered first', 'Ordered second'], array_slice($titles, 0, 2));
-        $this->assertContains('Live article', $titles);
+        // Positioned articles lead in their arranged order; the unpositioned
+        // one falls to the end rather than to the top, which is what MySQL's
+        // NULL-first default would have done.
+        $this->assertSame(['Ordered first', 'Ordered second', 'Live article'], $titles);
     }
 
     #[Test]
