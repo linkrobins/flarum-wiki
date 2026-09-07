@@ -17,6 +17,7 @@ linkrobins-wiki:
       shortcode_categories: 'Show the category list.'
       shortcode_heading: 'A heading (## and ### for smaller).'
       shortcode_link: 'A link. Bare web addresses become links too.'
+      shortcode_html: 'Raw HTML on the lines between the tags, for an embed or a widget. Left exactly as written.'
     layout:
       heading: 'Layout'
       intro: 'Where the Wiki link sits in the forum sidebar, and how much of the page the wiki uses.'

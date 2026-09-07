@@ -15,6 +15,7 @@ import {
   fullWidth,
   pageClassName,
   emptySidebar,
+  executeContentScripts,
 } from '../utils/helpers';
 import { canCreateWikiArticle } from '../utils/permissions';
 import { loadArticles, loadArticle, loadCategories } from '../utils/api';
@@ -275,9 +276,29 @@ export default class WikiIndexPage extends Page {
           block.attrs.title ? m('h2', { className: 'LinkRobinsWiki-homeBlock-title' }, block.attrs.title) : null,
           this._renderCategories(),
         ]);
+      case 'html':
+        return this._renderHtml(block);
       default:
         return null;
     }
+  }
+
+  // A raw [html] block from the layout setting. m.trust never runs embedded
+  // <script> tags, so widgets that boot themselves would silently do nothing;
+  // executeContentScripts re-creates them the way core does for post content.
+  _renderHtml(block: WikiBlock) {
+    const html = (block.lines || []).join('\n');
+    if (!html.trim()) return null;
+
+    return m(
+      'div',
+      {
+        className: 'LinkRobinsWiki-homeBlock LinkRobinsWiki-html',
+        oncreate: (vnode: any) => executeContentScripts(vnode.dom, html),
+        onupdate: (vnode: any) => executeContentScripts(vnode.dom, html),
+      },
+      m.trust(html)
+    );
   }
 
   _renderProse(block: WikiBlock) {
