@@ -34,21 +34,30 @@ class ArticleFulltextFilter extends AbstractFulltextFilter
         // case-insensitive already under their default collations.
         $driver = $query->getConnection()->getDriverName();
 
-        $query->where(function ($query) use ($driver, $term) {
+        // Raw SQL bypasses the query grammar, which is what applies the table
+        // prefix, so every raw fragment below uses a hand-wrapped identifier.
+        // The non-raw builder calls can keep the plain name.
+        $grammar = $query->getQuery()->getGrammar();
+        $wrapped = [
+            'title' => $grammar->wrap('linkrobins_wiki_articles.title'),
+            'content' => $grammar->wrap('linkrobins_wiki_articles.content'),
+        ];
+
+        $query->where(function ($query) use ($driver, $term, $wrapped) {
             foreach (['title', 'content'] as $column) {
-                $column = 'linkrobins_wiki_articles.'.$column;
+                $plain = 'linkrobins_wiki_articles.'.$column;
 
                 match ($driver) {
-                    'pgsql' => $query->orWhere($column, 'ilike', $term),
-                    'sqlite' => $query->orWhereRaw("LOWER($column) LIKE ?", [mb_strtolower($term)]),
-                    default => $query->orWhere($column, 'like', $term),
+                    'pgsql' => $query->orWhere($plain, 'ilike', $term),
+                    'sqlite' => $query->orWhereRaw("LOWER({$wrapped[$column]}) LIKE ?", [mb_strtolower($term)]),
+                    default => $query->orWhere($plain, 'like', $term),
                 };
             }
         });
 
         $titleMatch = $driver === 'pgsql'
-            ? "CASE WHEN linkrobins_wiki_articles.title ILIKE ? THEN 0 ELSE 1 END"
-            : "CASE WHEN LOWER(linkrobins_wiki_articles.title) LIKE ? THEN 0 ELSE 1 END";
+            ? "CASE WHEN {$wrapped['title']} ILIKE ? THEN 0 ELSE 1 END"
+            : "CASE WHEN LOWER({$wrapped['title']}) LIKE ? THEN 0 ELSE 1 END";
 
         $query->orderByRaw($titleMatch, [mb_strtolower($term)]);
     }

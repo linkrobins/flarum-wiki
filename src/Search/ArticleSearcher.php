@@ -34,7 +34,13 @@ class ArticleSearcher extends AbstractSearcher
     protected function applySort(DatabaseSearchState $state, ?array $sort = null, bool $sortIsDefault = false): void
     {
         if (! $sortIsDefault && is_array($sort) && array_key_exists('position', $sort)) {
-            $state->getQuery()->orderByRaw('linkrobins_wiki_articles.position IS NULL');
+            $query = $state->getQuery();
+
+            // Raw SQL bypasses the query grammar, so the table prefix has to be
+            // applied by hand or this breaks every install that uses one.
+            $position = $query->getQuery()->getGrammar()->wrap('linkrobins_wiki_articles.position');
+
+            $query->orderByRaw("$position IS NULL");
         }
 
         parent::applySort($state, $sort, $sortIsDefault);
