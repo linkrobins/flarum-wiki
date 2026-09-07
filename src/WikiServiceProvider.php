@@ -2,6 +2,7 @@
 
 namespace LinkRobins\Wiki;
 
+use Carbon\Carbon;
 use Flarum\Foundation\AbstractServiceProvider;
 use Flarum\Formatter\Formatter;
 use Psr\Log\LoggerInterface;
@@ -39,7 +40,39 @@ class WikiServiceProvider extends AbstractServiceProvider
             } catch (\Throwable $e) {
                 $log->warning('[linkrobins/wiki] revision write failed', ['exception' => $e]);
             }
+
+            try {
+                if ($article->wasChanged('slug')) {
+                    static::rememberOldSlug($article);
+                }
+            } catch (\Throwable $e) {
+                // A missed history row costs an old link, not the edit itself.
+                $log->warning('[linkrobins/wiki] slug history write failed', ['exception' => $e]);
+            }
         });
+    }
+
+    /**
+     * Record the slug an article just stopped using, so its old links keep
+     * resolving.
+     */
+    protected static function rememberOldSlug(WikiArticle $article): void
+    {
+        $previous = $article->getOriginal('slug');
+
+        if (! is_string($previous) || $previous === '' || $previous === $article->slug) {
+            return;
+        }
+
+        // The slug it has just moved TO may itself be a historical one (an
+        // article renamed back to an earlier name); that row would now be a
+        // self-reference pointing at the live slug, so drop it.
+        WikiArticleSlug::query()->where('slug', $article->slug)->delete();
+
+        WikiArticleSlug::query()->updateOrCreate(
+            ['slug' => $previous],
+            ['article_id' => $article->id, 'created_at' => Carbon::now()]
+        );
     }
 
     protected static function writeRevision(WikiArticle $article): void

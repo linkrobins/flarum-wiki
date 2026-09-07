@@ -3,6 +3,8 @@
 namespace LinkRobins\Wiki\Access;
 
 use Flarum\User\User;
+use Illuminate\Database\Eloquent\Builder;
+use LinkRobins\Wiki\WikiArticle;
 
 /**
  * Single source of truth for the wiki permission checks shared across the
@@ -33,6 +35,34 @@ class WikiAbilities
         }
 
         return $actor->isAdmin() || $actor->hasPermission(self::EDIT_ARTICLES);
+    }
+
+    /**
+     * Limit a query to the articles this actor may see, draft-wise: everyone
+     * sees published articles, an author also sees their own drafts, and an
+     * editor sees every draft.
+     *
+     * Lives here rather than in the resource because the Index endpoint goes
+     * through ArticleSearcher, which never touches the resource's scope, so
+     * both need the identical rule.
+     */
+    /**
+     * @param Builder<WikiArticle> $query
+     * @return Builder<WikiArticle>
+     */
+    public static function scopeVisibleDrafts(Builder $query, User $actor): Builder
+    {
+        if (self::isEditor($actor)) {
+            return $query;
+        }
+
+        return $query->where(function ($query) use ($actor) {
+            $query->where('linkrobins_wiki_articles.is_draft', false);
+
+            if (! $actor->isGuest()) {
+                $query->orWhere('linkrobins_wiki_articles.user_id', $actor->id);
+            }
+        });
     }
 
     /**

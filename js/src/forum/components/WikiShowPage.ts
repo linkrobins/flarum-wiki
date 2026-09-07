@@ -18,9 +18,12 @@ import {
   fullWidth,
   pageClassName,
   emptySidebar,
+  relatedEnabled,
+  relatedLimit,
+  safeNavigate,
 } from '../utils/helpers';
 import { canEditWikiArticles, canViewWikiHistory } from '../utils/permissions';
-import { loadArticle, loadRevisions, WIKI_PAGE_LIMIT } from '../utils/api';
+import { loadArticle, loadRevisions, WIKI_PAGE_LIMIT, loadArticles } from '../utils/api';
 import { lineDiff, foldContext, hasChanges, DiffLine } from '../utils/diff';
 import { fixedChromeHeight, processWikiHeadings, scrollToAnchor, tocEnabled, tocMinHeadings, WikiTocEntry } from '../utils/toc';
 
@@ -39,6 +42,7 @@ export default class WikiShowPage extends Page {
   // Table of contents (sticky rail on desktop, sticky bar on phones). Entries
   // are derived from the rendered article body; activeTocId tracks the section
   // currently in view.
+  related: any[] = [];
   tocEntries: WikiTocEntry[] = [];
   activeTocId: string | null = null;
   mobileTocOpen = false;
@@ -96,6 +100,7 @@ export default class WikiShowPage extends Page {
     this.revisions = null;
     this.revisionsHasMore = false;
     this.historyOpen = false;
+    this.related = [];
     this.tocEntries = [];
     this.activeTocId = null;
     this.mobileTocOpen = false;
@@ -109,6 +114,7 @@ export default class WikiShowPage extends Page {
       .then((article: any) => {
         this.article = article;
         this.loading = false;
+        this._loadRelated(article);
         try {
           app.setTitle(article.title() || tr('nav', 'Wiki'));
         } catch (e) {}
@@ -176,6 +182,14 @@ export default class WikiShowPage extends Page {
         ? m('div', { className: 'LinkRobinsWiki-deletedNotice' }, tr('show.deleted_notice', 'This article is deleted. Only editors can see it.'))
         : null,
 
+      article.isDraft && article.isDraft()
+        ? m(
+            'div',
+            { className: 'LinkRobinsWiki-draftNotice' },
+            tr('show.draft_notice', 'This article is a draft. Only you and wiki editors can see it.')
+          )
+        : null,
+
       m('div', { className: 'LinkRobinsWiki-articleLayout' }, [
         m('div', { className: 'LinkRobinsWiki-articleMain' }, [
           m('header', { className: 'LinkRobinsWiki-articleHeader' }, [
@@ -206,6 +220,8 @@ export default class WikiShowPage extends Page {
           ),
 
           this._renderFaq(article),
+
+          this._renderRelated(article),
 
           this._renderHistory(article),
 
@@ -585,6 +601,56 @@ export default class WikiShowPage extends Page {
   }
 
   // --- Revision history --------------------------------------------------
+
+  // Other articles filed under the same category. Automatic rather than
+  // hand-curated: a category is already the author's statement about what
+  // belongs together, so this needs no extra field on the article and stays
+  // correct as the category grows.
+  _renderRelated(article: any) {
+    if (!relatedEnabled() || !this.related.length) return null;
+
+    return m('section', { className: 'LinkRobinsWiki-related' }, [
+      m('h2', { className: 'LinkRobinsWiki-related-heading' }, tr('show.related_heading', 'Related articles')),
+      m(
+        'ul',
+        { className: 'LinkRobinsWiki-related-list' },
+        this.related.map((other: any) =>
+          m(
+            'li',
+            { key: 'related-' + other.id() },
+            m('a', { href: articleHref(other), onclick: (e: any) => safeNavigate(articleHref(other), e) }, other.title())
+          )
+        )
+      ),
+    ]);
+  }
+
+  _loadRelated(article: any) {
+    this.related = [];
+
+    if (!relatedEnabled()) return;
+
+    let category: any = null;
+    try {
+      category = article.category && article.category();
+    } catch (e) {
+      category = null;
+    }
+    if (!category) return;
+
+    const limit = relatedLimit();
+
+    // One extra, because the article being read is in its own category and
+    // gets filtered out below.
+    loadArticles({ filter: { categoryId: category.id() }, sort: 'position,-lastEditedAt', page: { limit: limit + 1 } })
+      .then((articles: any[]) => {
+        this.related = (articles || []).filter((a: any) => String(a.id()) !== String(article.id())).slice(0, limit);
+        m.redraw();
+      })
+      .catch(() => {
+        // A missing sibling list is not worth an error on the article.
+      });
+  }
 
   _renderHistory(article: any) {
     // Admins can restrict revision history to certain groups; don't offer the

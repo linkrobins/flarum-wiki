@@ -38,6 +38,18 @@ export function fullWidth(): boolean {
   return !!readForumAttribute('linkrobinsWikiFullWidth');
 }
 
+// Related articles: a short list of siblings from the same category under each
+// article. Defaults match the backend so an older payload behaves sensibly.
+export function relatedEnabled(): boolean {
+  const v = readForumAttribute('linkrobinsWikiRelatedEnabled');
+  return v === null || v === undefined ? true : !!v;
+}
+
+export function relatedLimit(): number {
+  const n = parseInt(String(readForumAttribute('linkrobinsWikiRelatedLimit')), 10);
+  return isNaN(n) || n < 1 ? 5 : Math.min(n, 20);
+}
+
 // PageStructure always renders a .Page-sidebar, and pushes whatever the
 // sidebar callback returns through ItemList.toArray(). That converts a
 // non-object to Object(content), so a null becomes {} -- a bare object Mithril

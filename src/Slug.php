@@ -52,7 +52,20 @@ final class Slug
             $query->where('id', '!=', $exceptId);
         }
 
-        return $query->exists();
+        if ($query->exists()) {
+            return true;
+        }
+
+        // Also refuse a slug another article used to answer to: handing it over
+        // would silently point that article's existing links at a different
+        // page, which is worse than asking the writer for another slug.
+        $history = WikiArticleSlug::query()->where('slug', $slug);
+
+        if ($exceptId !== null) {
+            $history->where('article_id', '!=', $exceptId);
+        }
+
+        return $history->exists();
     }
 
     /**

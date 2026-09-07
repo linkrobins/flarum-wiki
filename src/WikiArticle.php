@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property int $id
+ * @property bool $is_draft
  * @property int|null $category_id
  * @property int|null $user_id
  * @property int|null $last_edited_by_user_id
@@ -44,10 +45,14 @@ class WikiArticle extends AbstractModel implements Formattable
     protected $fillable = [
         'title',
         'content',
+        'position',
+        'is_draft',
     ];
 
     protected $casts = [
         'last_edited_at' => 'datetime',
+        'position' => 'integer',
+        'is_draft' => 'boolean',
     ];
 
     /** @var list<string> */

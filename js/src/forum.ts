@@ -1,5 +1,6 @@
 import { extend } from 'flarum/common/extend';
 import IndexSidebar from 'flarum/forum/components/IndexSidebar';
+import GlobalSearch from 'flarum/forum/components/GlobalSearch';
 import LinkButton from 'flarum/common/components/LinkButton';
 
 import WikiCategory from './common/models/WikiCategory';
@@ -10,6 +11,7 @@ import WikiComment from './common/models/WikiComment';
 import WikiIndexPage from './forum/components/WikiIndexPage';
 import WikiComposePage from './forum/components/WikiComposePage';
 import WikiShowPage from './forum/components/WikiShowPage';
+import WikiSearchSource from './forum/components/WikiSearchSource';
 
 import { tr } from './forum/utils/translate';
 import { basePath, navPriority, BASE_PATH } from './forum/utils/helpers';
@@ -26,6 +28,11 @@ app.initializers.add('linkrobins-wiki', () => {
   app.routes['linkrobins-wiki.compose'] = { path: BASE_PATH + '/new', component: WikiComposePage };
   app.routes['linkrobins-wiki.show'] = { path: BASE_PATH + '/:id', component: WikiShowPage };
   app.routes['linkrobins-wiki.edit'] = { path: BASE_PATH + '/:id/edit', component: WikiComposePage };
+
+  // Wiki articles in the forum's own search dropdown, under their own heading.
+  extend(GlobalSearch.prototype, 'sourceItems', (items: any) => {
+    items.add('linkrobins-wiki', new WikiSearchSource());
+  });
 
   // Global "Wiki" link in the index sidebar nav (shown on every page). The
   // admin picks the position; the default (-11) slots it directly below

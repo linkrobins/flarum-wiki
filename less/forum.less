@@ -873,3 +873,107 @@
         display: none;
     }
 }
+
+// Wiki search box on the index, and article hits in the forum's search
+// dropdown.
+.LinkRobinsWiki-search {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 16px;
+
+    &-input {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    &-go, &-clear {
+        flex: 0 0 auto;
+    }
+}
+
+.LinkRobinsWiki-searchResult {
+    > a {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        padding: 8px 15px;
+        color: var(--text-color);
+    }
+
+    &-icon {
+        color: var(--muted-color);
+        flex: 0 0 auto;
+    }
+
+    &-title {
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &-category {
+        flex: 0 0 auto;
+        font-size: 12px;
+        color: var(--muted-color);
+    }
+}
+
+// A raw [html] block from the index layout. No opinions about the markup
+// inside beyond keeping a wide embed from breaking the page.
+.LinkRobinsWiki-html {
+    max-width: 100%;
+    overflow-x: auto;
+
+    img, iframe, video {
+        max-width: 100%;
+    }
+}
+
+// Sibling articles from the same category, under the body.
+.LinkRobinsWiki-related {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--control-bg);
+
+    &-heading {
+        font-size: 16px;
+        margin: 0 0 8px;
+    }
+
+    &-list {
+        margin: 0;
+        padding-left: 18px;
+
+        li {
+            margin-bottom: 4px;
+        }
+    }
+}
+
+// Draft treatment: the same muted, marked shape the deleted state uses, so an
+// unfinished article is obvious in a list and on its own page.
+.LinkRobinsWiki-draftNotice {
+    background: var(--control-bg);
+    color: var(--text-color);
+    padding: 8px 12px;
+    border-radius: var(--border-radius);
+    margin-bottom: 12px;
+}
+
+.LinkRobinsWiki-row--draft .LinkRobinsWiki-row-subject {
+    color: var(--muted-color);
+}
+
+.LinkRobinsWiki-row-draftBadge {
+    margin-left: 8px;
+    padding: 1px 6px;
+    border-radius: var(--border-radius);
+    background: var(--control-bg);
+    color: var(--muted-color);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}

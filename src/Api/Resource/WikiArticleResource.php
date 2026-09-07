@@ -14,6 +14,7 @@ use LinkRobins\Wiki\Access\WikiAbilities;
 use LinkRobins\Wiki\Faq;
 use LinkRobins\Wiki\Slug;
 use LinkRobins\Wiki\WikiArticle;
+use LinkRobins\Wiki\WikiArticleSlug;
 use LinkRobins\Wiki\WikiCategory;
 use Psr\Log\LoggerInterface;
 use Tobyz\JsonApiServer\Context;
@@ -51,6 +52,8 @@ class WikiArticleResource extends AbstractDatabaseResource
         if (WikiAbilities::isEditor($context->getActor())) {
             $query->withTrashed();
         }
+
+        WikiAbilities::scopeVisibleDrafts($query, $context->getActor());
     }
 
     /**
@@ -66,7 +69,18 @@ class WikiArticleResource extends AbstractDatabaseResource
             return $this->query($context)->find($id);
         }
 
-        return $this->query($context)->where('slug', $id)->first();
+        $article = $this->query($context)->where('slug', $id)->first();
+
+        if ($article) {
+            return $article;
+        }
+
+        // A slug the article used to answer to. Returning the article keeps
+        // shared links working; the frontend rewrites the address bar to the
+        // current slug on load, so the old URL is a redirect in effect.
+        $historic = WikiArticleSlug::query()->where('slug', $id)->value('article_id');
+
+        return $historic ? $this->query($context)->find($historic) : null;
     }
 
     public function endpoints(): array
@@ -92,6 +106,10 @@ class WikiArticleResource extends AbstractDatabaseResource
     public function sorts(): array
     {
         return [
+            // Manual order. The null-last behaviour lives in ArticleSearcher,
+            // since this model has a searcher and the Index endpoint therefore
+            // never applies these sorts itself.
+            SortColumn::make('position'),
             SortColumn::make('lastEditedAt')->descendingAlias('latest'),
             SortColumn::make('createdAt')->descendingAlias('newest')->ascendingAlias('oldest'),
             SortColumn::make('title'),
@@ -216,6 +234,27 @@ class WikiArticleResource extends AbstractDatabaseResource
                 ->property('updated_at'),
             Schema\DateTime::make('lastEditedAt')
                 ->property('last_edited_at')
+                ->nullable(),
+
+            // Whether the article is still being written. Only someone who
+            // could edit the article can flip it, and the field is invisible
+            // to everyone else so a reader's payload never mentions drafts.
+            Schema\Boolean::make('isDraft')
+                ->property('is_draft')
+                // A model that has not round-tripped through the database yet
+                // has no value here, and Flarum's AbstractModel ignores an
+                // $attributes default, so cast rather than serialize null.
+                ->get(fn (WikiArticle $article) => (bool) $article->is_draft)
+                ->writable(fn (WikiArticle $article, FlarumContext $context) => $context->creating()
+                    || $context->getActor()->can('update', $article))
+                ->visible(fn (WikiArticle $article, FlarumContext $context) => $context->creating()
+                    || WikiAbilities::isEditor($context->getActor())
+                    || (! $context->getActor()->isGuest() && $context->getActor()->id === $article->user_id)),
+
+            // Optional manual order within a listing. Null sorts last, so an
+            // unpositioned article behaves exactly as it did before.
+            Schema\Integer::make('position')
+                ->writable()
                 ->nullable(),
 
             Schema\Integer::make('revisionCount')

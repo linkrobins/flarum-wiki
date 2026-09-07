@@ -1,4 +1,6 @@
 import Page from 'flarum/common/components/Page';
+import Button from 'flarum/common/components/Button';
+import extractText from 'flarum/common/utils/extractText';
 import LoadingIndicator from 'flarum/common/components/LoadingIndicator';
 import PageStructure from 'flarum/forum/components/PageStructure';
 import WikiIndexSidebar from './WikiIndexSidebar';
@@ -13,6 +15,7 @@ import {
   fullWidth,
   pageClassName,
   emptySidebar,
+  executeContentScripts,
 } from '../utils/helpers';
 import { canCreateWikiArticle } from '../utils/permissions';
 import { loadArticles, loadArticle, loadCategories } from '../utils/api';
@@ -23,6 +26,11 @@ export default class WikiIndexPage extends Page {
   error: any = null;
   articles: any[] = [];
   category: string | null = null;
+
+  // Search state. `query` is what the list was loaded with (from the route);
+  // `queryDraft` is what is currently in the box, so typing doesn't refetch.
+  query = '';
+  queryDraft = '';
 
   // Custom-layout state.
   layout: string = '';
@@ -40,7 +48,8 @@ export default class WikiIndexPage extends Page {
 
   onbeforeupdate(vnode: any) {
     const next = m.route.param('category') || null;
-    if (next !== this.category) {
+    const nextQuery = (m.route.param('q') || '').toString();
+    if (next !== this.category || nextQuery !== this.query) {
       Promise.resolve().then(() => this._init());
     }
     return true;
@@ -48,8 +57,18 @@ export default class WikiIndexPage extends Page {
 
   _init() {
     this.category = m.route.param('category') || null;
+    this.query = (m.route.param('q') || '').toString();
+    this.queryDraft = this.query;
     this.error = null;
     this.blockData = {};
+
+    // A search always shows results, whatever the custom layout says, for the
+    // same reason a category filter does.
+    if (this.query.trim()) {
+      this.blocks = [];
+      this._loadList();
+      return;
+    }
 
     // A category filter (from the sidebar) always shows that category's list,
     // regardless of any custom homepage layout.
@@ -83,9 +102,18 @@ export default class WikiIndexPage extends Page {
   _loadList() {
     this.loading = true;
     m.redraw();
-    const params: any = { page: { limit: 25 } };
+    const params: any = { page: { limit: 25 }, filter: {} };
     if (this.category) {
-      params.filter = { categoryId: this.category };
+      params.filter.categoryId = this.category;
+      // A category is the unit people arrange by hand, so its listing leads
+      // with the manual order and falls back to recency for the rest.
+      params.sort = 'position,-lastEditedAt';
+    }
+    if (this.query.trim()) {
+      params.filter.q = this.query.trim();
+      // The default sort stays: the fulltext filter adds its title-first
+      // ordering before the sort is applied, so title matches lead and recency
+      // breaks ties.
     }
     loadArticles(params)
       .then((articles: any[]) => {
@@ -113,7 +141,14 @@ export default class WikiIndexPage extends Page {
       if (block.type === 'articles') {
         const params: any = { page: { limit: parseInt(block.attrs.limit, 10) || 25 } };
         const catId = block.attrs.category ? this._resolveCategoryId(block.attrs.category) : null;
-        if (catId) params.filter = { categoryId: catId };
+        if (catId) {
+          params.filter = { categoryId: catId };
+          // Same rule as the category listing page: a block that names a
+          // category shows it in the order it was arranged by hand. A block
+          // with no category stays on recency, which is what "[articles
+          // limit=5 title=Recent]" is for.
+          params.sort = 'position,-lastEditedAt';
+        }
         loadArticles(params)
           .then((arts: any[]) => {
             this.blockData[i] = arts || [];
@@ -161,20 +196,72 @@ export default class WikiIndexPage extends Page {
   }
 
   _renderBody() {
-    // Custom homepage layout (only when no category filter is active).
-    if (!this.category && this.blocks.length) {
-      return m(
-        'div',
-        { className: 'LinkRobinsWiki-home' },
-        this.blocks.map((b, i) => this._renderBlock(b, i))
-      );
+    // Custom homepage layout (only when no category filter or search is on).
+    if (!this.category && !this.query.trim() && this.blocks.length) {
+      return [
+        this._renderSearch(),
+        m(
+          'div',
+          { className: 'LinkRobinsWiki-home' },
+          this.blocks.map((b, i) => this._renderBlock(b, i))
+        ),
+      ];
     }
 
-    return [this._renderHeader(), this._renderList(this.articles)];
+    return [this._renderSearch(), this._renderHeader(), this._renderList(this.articles)];
+  }
+
+  // The wiki's own search box. Submitting puts the term in the URL (?q=), so a
+  // result page can be linked, bookmarked and gone back to.
+  _renderSearch() {
+    const submit = (e?: any) => {
+      if (e) e.preventDefault();
+      const value = (this.queryDraft || '').trim();
+      const params: any = {};
+      if (value) params.q = value;
+      if (this.category) params.category = this.category;
+      m.route.set(basePath() + BASE_PATH, params);
+    };
+
+    return m('form', { className: 'LinkRobinsWiki-search', onsubmit: submit, role: 'search' }, [
+      m('input', {
+        className: 'FormControl LinkRobinsWiki-search-input',
+        type: 'search',
+        value: this.queryDraft,
+        placeholder: extractText(tr('search.placeholder', 'Search the wiki')),
+        'aria-label': extractText(tr('search.placeholder', 'Search the wiki')),
+        oninput: (e: any) => {
+          this.queryDraft = e.target.value;
+        },
+      }),
+      m(Button, { className: 'Button LinkRobinsWiki-search-go', type: 'submit', icon: 'fas fa-search' }, tr('search.button', 'Search')),
+      this.query.trim()
+        ? m(
+            Button,
+            {
+              className: 'Button Button--link LinkRobinsWiki-search-clear',
+              onclick: () => {
+                this.queryDraft = '';
+                submit();
+              },
+            },
+            tr('search.clear', 'Clear')
+          )
+        : null,
+    ]);
   }
 
   _renderHeader() {
     const cat = this.category ? this.categories.find((c: any) => String(c.id()) === String(this.category)) : null;
+    if (this.query.trim()) {
+      return m('header', { className: 'LinkRobinsWiki-header' }, [
+        m('h1', { className: 'LinkRobinsWiki-title' }, [
+          m('i', { className: 'fas fa-search' }),
+          ' ',
+          tr('search.results_heading', 'Results for "{query}"', { query: this.query.trim() }),
+        ]),
+      ]);
+    }
     const label = cat ? cat.name() : tr('nav', 'Wiki');
     return m('header', { className: 'LinkRobinsWiki-header' }, [
       m('h1', { className: 'LinkRobinsWiki-title' }, [m('i', { className: 'fas fa-book' }), ' ', label]),
@@ -199,9 +286,29 @@ export default class WikiIndexPage extends Page {
           block.attrs.title ? m('h2', { className: 'LinkRobinsWiki-homeBlock-title' }, block.attrs.title) : null,
           this._renderCategories(),
         ]);
+      case 'html':
+        return this._renderHtml(block);
       default:
         return null;
     }
+  }
+
+  // A raw [html] block from the layout setting. m.trust never runs embedded
+  // <script> tags, so widgets that boot themselves would silently do nothing;
+  // executeContentScripts re-creates them the way core does for post content.
+  _renderHtml(block: WikiBlock) {
+    const html = (block.lines || []).join('\n');
+    if (!html.trim()) return null;
+
+    return m(
+      'div',
+      {
+        className: 'LinkRobinsWiki-homeBlock LinkRobinsWiki-html',
+        oncreate: (vnode: any) => executeContentScripts(vnode.dom, html),
+        onupdate: (vnode: any) => executeContentScripts(vnode.dom, html),
+      },
+      m.trust(html)
+    );
   }
 
   _renderProse(block: WikiBlock) {
@@ -311,6 +418,11 @@ export default class WikiIndexPage extends Page {
       return m('div', { className: 'LinkRobinsWiki-empty' }, tr('errors.load_articles', 'Could not load articles.'));
     }
     if (!articles || !articles.length) {
+      // "Nothing yet, write one" is the wrong prompt when a search simply
+      // found nothing.
+      if (this.query.trim()) {
+        return m('div', { className: 'LinkRobinsWiki-empty' }, tr('search.empty', 'No articles match "{query}".', { query: this.query.trim() }));
+      }
       return m(
         'div',
         { className: 'LinkRobinsWiki-empty' },
@@ -331,12 +443,13 @@ export default class WikiIndexPage extends Page {
     const cat = article.category && article.category();
     const href = articleHref(article);
     const isDeleted = !!(article.isDeleted && article.isDeleted());
+    const isDraft = !!(article.isDraft && article.isDraft());
 
     return m(
       'a',
       {
         href,
-        className: 'LinkRobinsWiki-row' + (isDeleted ? ' LinkRobinsWiki-row--deleted' : ''),
+        className: 'LinkRobinsWiki-row' + (isDeleted ? ' LinkRobinsWiki-row--deleted' : '') + (isDraft ? ' LinkRobinsWiki-row--draft' : ''),
         onclick: (e: any) => safeNavigate(href, e),
         key: 'article-' + article.id(),
       },
@@ -345,6 +458,7 @@ export default class WikiIndexPage extends Page {
           m('div', { className: 'LinkRobinsWiki-row-subject' }, [
             article.title() || tr('index.untitled', 'Untitled'),
             isDeleted ? m('span', { className: 'LinkRobinsWiki-row-deletedBadge' }, tr('index.deleted_badge', 'Deleted')) : null,
+            isDraft ? m('span', { className: 'LinkRobinsWiki-row-draftBadge' }, tr('index.draft_badge', 'Draft')) : null,
           ]),
           m('div', { className: 'LinkRobinsWiki-row-meta' }, [
             cat ? m('span', { className: 'LinkRobinsWiki-row-cat', style: 'color: ' + (cat.color() || 'inherit') }, cat.name()) : null,
