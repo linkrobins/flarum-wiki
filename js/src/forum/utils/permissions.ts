@@ -29,6 +29,16 @@ export function canEditWikiArticles(): boolean {
   }
 }
 
+export function canReportWikiArticle(): boolean {
+  try {
+    if (!app.session || !app.session.user) return false;
+    if (isAdmin()) return true;
+    return !!readForumAttribute('canReportWikiArticle');
+  } catch (e) {
+    return false;
+  }
+}
+
 export function canCommentWiki(): boolean {
   try {
     if (!app.session || !app.session.user) return false;

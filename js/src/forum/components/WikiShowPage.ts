@@ -3,6 +3,7 @@ import LoadingIndicator from 'flarum/common/components/LoadingIndicator';
 import Button from 'flarum/common/components/Button';
 import Dropdown from 'flarum/common/components/Dropdown';
 import Tooltip from 'flarum/common/components/Tooltip';
+import WikiReportModal from './WikiReportModal';
 import PageStructure from 'flarum/forum/components/PageStructure';
 import WikiIndexSidebar from './WikiIndexSidebar';
 import WikiComments from './WikiComments';
@@ -23,7 +24,7 @@ import {
   relatedLimit,
   safeNavigate,
 } from '../utils/helpers';
-import { canEditWikiArticles, canViewWikiHistory } from '../utils/permissions';
+import { canEditWikiArticles, canViewWikiHistory, canReportWikiArticle } from '../utils/permissions';
 import { loadArticle, loadRevisions, WIKI_PAGE_LIMIT, loadArticles } from '../utils/api';
 import { lineDiff, foldContext, hasChanges, DiffLine } from '../utils/diff';
 import { fixedChromeHeight, processWikiHeadings, scrollToAnchor, tocEnabled, tocMinHeadings, WikiTocEntry } from '../utils/toc';
@@ -590,7 +591,7 @@ export default class WikiShowPage extends Page {
     const isEditor = canEditWikiArticles();
     const isDeleted = !!(article.isDeleted && article.isDeleted());
 
-    if (!canUpdate && !canDelete && !isEditor) {
+    if (!canUpdate && !canDelete && !isEditor && !canReportWikiArticle()) {
       return null;
     }
 
@@ -607,6 +608,17 @@ export default class WikiShowPage extends Page {
             onclick: () => m.route.set(basePath() + BASE_PATH + '/' + encodeURIComponent(article.id()) + '/edit'),
           },
           tr('action.edit', 'Edit')
+        )
+      );
+    }
+    // Reporting sits between the reader's action and the editor's ones: it is
+    // what somebody without rights came here to do, and it is not destructive.
+    if (canReportWikiArticle() && !isDeleted) {
+      menu.push(
+        m(
+          Button,
+          { icon: 'fas fa-flag', onclick: () => app.modal.show(WikiReportModal, { article }) },
+          tr('action.report', 'Report')
         )
       );
     }

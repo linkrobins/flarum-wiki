@@ -110,6 +110,19 @@ return [
                     }
                 }),
 
+            \Flarum\Api\Schema\Boolean::make('canReportWikiArticle')
+                ->get(function ($model, \Flarum\Api\Context $context) {
+                    $actor = $context->getActor();
+                    if ($actor->isGuest()) {
+                        return false;
+                    }
+                    try {
+                        return $actor->can('reportArticle');
+                    } catch (\Throwable $e) {
+                        return false;
+                    }
+                }),
+
             \Flarum\Api\Schema\Boolean::make('canEditWikiArticles')
                 ->get(function ($model, \Flarum\Api\Context $context) {
                     $actor = $context->getActor();
