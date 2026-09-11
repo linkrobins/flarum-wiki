@@ -15,7 +15,7 @@ import WikiShowPage from './forum/components/WikiShowPage';
 import WikiSearchSource from './forum/components/WikiSearchSource';
 
 import { tr } from './forum/utils/translate';
-import { basePath, navPriority, BASE_PATH } from './forum/utils/helpers';
+import { basePath, navPriority, navHidden, BASE_PATH } from './forum/utils/helpers';
 
 app.initializers.add('linkrobins-wiki', () => {
   // Register the store models so app.store.find()/createRecord() return typed,
@@ -43,6 +43,10 @@ app.initializers.add('linkrobins-wiki', () => {
   // block. Without the tags extension it simply lands under the remaining nav
   // links. Read at render time, when app.forum exists.
   extend(IndexSidebar.prototype, 'navItems', (items: any) => {
+    // "Hidden" means never added, so it is absent from the mobile drawer too,
+    // which renders this same list.
+    if (navHidden()) return;
+
     items.add('linkrobins-wiki', m(LinkButton, { href: basePath() + BASE_PATH, icon: 'fas fa-book' }, tr('nav', 'Wiki')), navPriority());
   });
 });
