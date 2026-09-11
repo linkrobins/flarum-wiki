@@ -595,6 +595,21 @@ export default class WikiShowPage extends Page {
     }
 
     const menu: any[] = [];
+    // Edit leads the menu: it is the one thing a reader with rights actually
+    // came to do, and it belongs above the destructive items rather than
+    // beside them as a second button competing with the title.
+    if (canUpdate) {
+      menu.push(
+        m(
+          Button,
+          {
+            icon: 'fas fa-pencil-alt',
+            onclick: () => m.route.set(basePath() + BASE_PATH + '/' + encodeURIComponent(article.id()) + '/edit'),
+          },
+          tr('action.edit', 'Edit')
+        )
+      );
+    }
     if (isEditor && !isDeleted) {
       menu.push(m(Button, { icon: 'fas fa-trash', onclick: () => this._softDelete(article) }, tr('action.delete', 'Delete')));
     }
@@ -605,20 +620,18 @@ export default class WikiShowPage extends Page {
       menu.push(m(Button, { icon: 'fas fa-times', onclick: () => this._deleteForever(article) }, tr('action.delete_forever', 'Delete forever')));
     }
 
-    return m('div', { className: 'LinkRobinsWiki-articleControls' }, [
-      canUpdate
-        ? m(
-            Button,
-            {
-              className: 'Button',
-              icon: 'fas fa-pencil-alt',
-              onclick: () => m.route.set(basePath() + BASE_PATH + '/' + encodeURIComponent(article.id()) + '/edit'),
-            },
-            tr('action.edit', 'Edit')
-          )
-        : null,
-      menu.length ? m(Dropdown, { className: 'Dropdown--icon', icon: 'fas fa-ellipsis-h', buttonClassName: 'Button Button--icon' }, menu) : null,
-    ]);
+    // Nothing to offer: rights that apply to no action on this article (a
+    // delete permission while the article is not deleted, say) used to leave
+    // an empty control bar behind.
+    if (!menu.length) {
+      return null;
+    }
+
+    return m(
+      'div',
+      { className: 'LinkRobinsWiki-articleControls' },
+      m(Dropdown, { className: 'Dropdown--icon', icon: 'fas fa-ellipsis-h', buttonClassName: 'Button Button--icon' }, menu)
+    );
   }
 
   // --- Revision history --------------------------------------------------
