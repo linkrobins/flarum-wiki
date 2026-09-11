@@ -26,6 +26,17 @@ const NAV_PRIORITIES: Record<string, number> = {
   bottom: -1000,
 };
 
+/**
+ * Whether the admin has asked for no Wiki link in the navigation at all.
+ *
+ * Checked before the item is added rather than hidden with CSS, so it is gone
+ * from the sidebar and the mobile drawer alike, both of which render the same
+ * IndexSidebar item list.
+ */
+export function navHidden(): boolean {
+  return String(readForumAttribute('linkrobinsWikiNavPosition') || 'sections') === 'hidden';
+}
+
 export function navPriority(): number {
   const value = String(readForumAttribute('linkrobinsWikiNavPosition') || 'sections');
   const priority = NAV_PRIORITIES[value];

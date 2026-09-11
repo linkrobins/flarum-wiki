@@ -56,7 +56,7 @@ return [
             'linkrobins-wiki.nav_position',
             // An unset setting arrives as '', which is not one of the four
             // positions; fall back rather than let the frontend guess.
-            fn ($value) => in_array($value, ['top', 'below_all', 'sections', 'bottom'], true) ? $value : 'sections'
+            fn ($value) => in_array($value, ['top', 'below_all', 'sections', 'bottom', 'hidden'], true) ? $value : 'sections'
         )
         ->serializeToForum('linkrobinsWikiFullWidth', 'linkrobins-wiki.full_width', fn ($value) => (bool) $value)
         ->serializeToForum('linkrobinsWikiRelatedEnabled', 'linkrobins-wiki.related_enabled', fn ($value) => (bool) $value)

@@ -114,6 +114,7 @@ export default class WikiAdminPage extends ExtensionPage {
           below_all: t('linkrobins-wiki.admin.layout.nav_position_below_all'),
           sections: t('linkrobins-wiki.admin.layout.nav_position_sections'),
           bottom: t('linkrobins-wiki.admin.layout.nav_position_bottom'),
+          hidden: t('linkrobins-wiki.admin.layout.nav_position_hidden'),
         },
         label: t('linkrobins-wiki.admin.layout.nav_position_label'),
         help: t('linkrobins-wiki.admin.layout.nav_position_help'),
