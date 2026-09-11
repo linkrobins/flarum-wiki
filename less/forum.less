@@ -43,6 +43,11 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 12px;
+    // Full-width mode hands the index the whole viewport, and a wiki category
+    // holds a handful of articles, not a screenful: past four columns the last
+    // row of every group is mostly empty track. The cap only bites in
+    // full-width mode, since the ordinary container is narrower than this.
+    max-width: 1400px;
 }
 
 .LinkRobinsWiki-group {
