@@ -208,7 +208,11 @@ export default class WikiIndexPage extends Page {
       ];
     }
 
-    return [this._renderSearch(), this._renderHeader(), this._renderList(this.articles)];
+    // A plain listing when the reader has already narrowed things themselves
+    // (a search or a category); grouped when this is the index of everything.
+    const body = this.category || this.query.trim() ? this._renderList(this.articles) : this._renderGrouped(this.articles);
+
+    return [this._renderSearch(), this._renderHeader(), body];
   }
 
   // The wiki's own search box. Submitting puts the term in the URL (?q=), so a
@@ -410,7 +414,7 @@ export default class WikiIndexPage extends Page {
 
   // --- Shared list / row ------------------------------------------------
 
-  _renderList(articles: any[]) {
+  _renderList(articles: any[], opts: { hideCategory?: boolean } = {}) {
     if (this.loading) {
       return m(LoadingIndicator);
     }
@@ -434,13 +438,61 @@ export default class WikiIndexPage extends Page {
     return m(
       'div',
       { className: 'LinkRobinsWiki-list' },
-      articles.map((a: any) => this._renderRow(a))
+      articles.map((a: any) => this._renderRow(a, opts))
     );
   }
 
-  _renderRow(article: any) {
-    const user = article.user && article.user();
+  /**
+   * The default index, grouped under one heading per category.
+   *
+   * A flat listing repeats the category on every card, which on a wiki is the
+   * one thing a run of articles already has in common. The heading says it
+   * once and the cards get the room back for what each article is about.
+   */
+  _renderGrouped(articles: any[]) {
+    if (this.loading || this.error || !articles || !articles.length) {
+      return this._renderList(articles);
+    }
+
+    const groups: { key: string; cat: any; items: any[] }[] = [];
+    const seen: Record<string, number> = {};
+
+    articles.forEach((a: any) => {
+      const cat = a.category && a.category();
+      const key = cat ? 'c' + cat.id() : 'none';
+
+      if (seen[key] === undefined) {
+        seen[key] = groups.length;
+        groups.push({ key, cat, items: [] });
+      }
+
+      groups[seen[key]].items.push(a);
+    });
+
+    // One group is not a grouping: an uncategorised wiki gets the plain
+    // listing rather than a lone heading sitting over everything it owns.
+    if (groups.length < 2) {
+      return this._renderList(articles);
+    }
+
+    return groups.map((g) =>
+      m('section', { className: 'LinkRobinsWiki-group', key: 'group-' + g.key }, [
+        m(
+          'h2',
+          {
+            className: 'LinkRobinsWiki-group-title',
+            style: g.cat && g.cat.color() ? 'color: ' + g.cat.color() : undefined,
+          },
+          g.cat ? g.cat.name() : tr('index.uncategorised', 'Other')
+        ),
+        this._renderList(g.items, { hideCategory: true }),
+      ])
+    );
+  }
+
+  _renderRow(article: any, opts: { hideCategory?: boolean } = {}) {
     const cat = article.category && article.category();
+    const excerpt = (article.excerpt && article.excerpt()) || '';
     const href = articleHref(article);
     const isDeleted = !!(article.isDeleted && article.isDeleted());
     const isDraft = !!(article.isDraft && article.isDraft());
@@ -460,9 +512,14 @@ export default class WikiIndexPage extends Page {
             isDeleted ? m('span', { className: 'LinkRobinsWiki-row-deletedBadge' }, tr('index.deleted_badge', 'Deleted')) : null,
             isDraft ? m('span', { className: 'LinkRobinsWiki-row-draftBadge' }, tr('index.draft_badge', 'Draft')) : null,
           ]),
+          excerpt ? m('div', { className: 'LinkRobinsWiki-row-excerpt' }, excerpt) : null,
           m('div', { className: 'LinkRobinsWiki-row-meta' }, [
-            cat ? m('span', { className: 'LinkRobinsWiki-row-cat', style: 'color: ' + (cat.color() || 'inherit') }, cat.name()) : null,
-            user ? m('span', { className: 'LinkRobinsWiki-row-user' }, user.displayName() || user.username()) : null,
+            // The author is the one field on a wiki card nobody navigates by,
+            // and it was a third of what stretched every row. The category
+            // goes too wherever a heading above already says it.
+            cat && !opts.hideCategory
+              ? m('span', { className: 'LinkRobinsWiki-row-cat', style: 'color: ' + (cat.color() || 'inherit') }, cat.name())
+              : null,
             m('span', { className: 'LinkRobinsWiki-row-date' }, formatDate(article.lastEditedAt() || article.createdAt())),
           ]),
         ]),

@@ -19,6 +19,7 @@ use LinkRobins\Wiki\WikiCategory;
 use Psr\Log\LoggerInterface;
 use Tobyz\JsonApiServer\Context;
 use Tobyz\JsonApiServer\Exception\BadRequestException;
+use s9e\TextFormatter\Utils as TextFormatterUtils;
 
 class WikiArticleResource extends AbstractDatabaseResource
 {
@@ -155,6 +156,37 @@ class WikiArticleResource extends AbstractDatabaseResource
                     // Route through HasFormattedContent so the formatter parses
                     // the source into the trait's representation in `content`.
                     $article->setContentAttribute($value, $context->getActor());
+                }),
+
+            // A plain-text opening for the index, so a card can say what an
+            // article is about instead of repeating its category and author.
+            //
+            // Built from the stored representation rather than from rendered
+            // HTML: `removeFormatting()` drops the `<s>`/`<e>` nodes holding
+            // the source markup and returns the text, which costs one XML
+            // parse per article instead of a full render of every body on the
+            // page.
+            Schema\Str::make('excerpt')
+                ->get(function (WikiArticle $article) {
+                    $content = (string) $article->content;
+
+                    if ($content === '') {
+                        return '';
+                    }
+
+                    try {
+                        $plain = TextFormatterUtils::removeFormatting($content);
+                    } catch (\Throwable $e) {
+                        // A body that will not parse should cost a card its
+                        // excerpt, not the whole index its listing.
+                        $this->log->warning('[linkrobins/wiki] excerpt failed', ['exception' => $e]);
+
+                        return '';
+                    }
+
+                    $plain = trim((string) preg_replace('/\s+/u', ' ', $plain));
+
+                    return mb_strimwidth($plain, 0, 180, '…');
                 }),
 
             Schema\Str::make('contentHtml')
