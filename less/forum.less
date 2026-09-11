@@ -213,6 +213,13 @@
     gap: 8px;
 }
 
+// The controls are out of the flow, so the title has to keep clear of them by
+// itself or a long one runs underneath. Only when there are controls: the
+// selector relies on the bar being rendered before the title.
+.LinkRobinsWiki-articleControls + .LinkRobinsWiki-articleTitle {
+    padding-right: 48px;
+}
+
 .LinkRobinsWiki-byline {
     display: flex;
     flex-wrap: wrap;
@@ -587,10 +594,9 @@
     .LinkRobinsWiki-articleTitle {
         font-size: calc(1.4rem * var(--lr-text-scale, 1));
     }
-    .LinkRobinsWiki-articleControls {
-        position: static;
-        margin-bottom: 12px;
-    }
+    // The control bar used to drop into the flow here, because an Edit button
+    // beside the dropdown was too wide to sit over a wrapped title. It is one
+    // icon now, so it stays pinned to the top right on a phone as well.
 }
 
 // --- Customizable home page ------------------------------------------
