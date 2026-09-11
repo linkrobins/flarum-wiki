@@ -168,7 +168,10 @@ class WikiArticleResource extends AbstractDatabaseResource
             // page.
             Schema\Str::make('excerpt')
                 ->get(function (WikiArticle $article) {
-                    $content = (string) $article->content;
+                    // `content` is an accessor that unparses back to Markdown
+                    // source; `parsed_content` is the stored representation,
+                    // which is what removeFormatting() expects.
+                    $content = (string) $article->parsed_content;
 
                     if ($content === '') {
                         return '';
