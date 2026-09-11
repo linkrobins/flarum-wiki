@@ -548,7 +548,9 @@ export default class WikiShowPage extends Page {
     const when = formatDate(article.lastEditedAt() || article.createdAt());
     const editorName = editor ? editor.displayName() || editor.username() : '';
     const detail = editor
-      ? trText('show.last_edited_tooltip', 'Last edited by {user} on {date}', { user: editorName, date: when })
+      // `user` is a reserved translator param (it expects a User model and
+      // rewrites the placeholder to {username}), so a plain name goes as {name}.
+      ? trText('show.last_edited_tooltip', 'Last edited by {name} on {date}', { name: editorName, date: when })
       : trText('show.created_tooltip', 'Written on {date}', { date: when });
 
     segments.push(
