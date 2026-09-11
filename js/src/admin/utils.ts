@@ -45,3 +45,24 @@ export function saveCategory(category: any, attrs: Record<string, any>): Promise
 export function deleteCategory(category: any): Promise<any> {
   return category.delete();
 }
+
+// --- Reports -------------------------------------------------------------
+
+/**
+ * The report queue. Open ones first and newest first within that, because a
+ * queue is worked from the top and a resolved report is history.
+ */
+export function loadReports(includeResolved: boolean): Promise<any> {
+  return app.store.find('linkrobins-wiki-reports', {
+    sort: '-createdAt',
+    include: 'user,article,resolvedBy',
+    page: { limit: 50 },
+  }).then((reports: any[]) => {
+    const all = reports || [];
+    return includeResolved ? all : all.filter((r: any) => !r.isResolved());
+  });
+}
+
+export function resolveReport(report: any, resolved: boolean): Promise<any> {
+  return report.save({ isResolved: resolved });
+}

@@ -1,9 +1,11 @@
 import WikiCategory from './common/models/WikiCategory';
+import WikiReport from './common/models/WikiReport';
 import WikiAdminPage from './admin/components/WikiAdminPage';
 import { tx } from './admin/utils';
 
 app.initializers.add('linkrobins-wiki', () => {
   app.store.models['linkrobins-wiki-categories'] = WikiCategory;
+  app.store.models['linkrobins-wiki-reports'] = WikiReport;
 
   if (!app.registry || typeof app.registry.for !== 'function') {
     console.warn('[linkrobins/wiki] app.registry not available');

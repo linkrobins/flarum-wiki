@@ -43,6 +43,16 @@ linkrobins-wiki:
       enabled_help: 'When on, an article with a category lists a few of its siblings underneath. Articles without a category show nothing.'
       limit_label: 'How many to show'
       limit_help: 'At most this many related articles, between 1 and 20.'
+    reports:
+      heading: 'Reports'
+      intro: 'Articles readers have flagged for an editor to look at. Resolving one keeps it here as history rather than deleting it.'
+      empty: 'Nothing reported.'
+      show_resolved: 'Show resolved'
+      hide_resolved: 'Hide resolved'
+      resolve: 'Resolve'
+      reopen: 'Reopen'
+      article_gone: 'Article deleted'
+      deleted_user: 'Deleted account'
     categories:
       heading: 'Wiki categories'
       intro: 'Create and organize the categories articles can be filed under.'
