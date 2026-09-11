@@ -2,6 +2,8 @@ import Page from 'flarum/common/components/Page';
 import LoadingIndicator from 'flarum/common/components/LoadingIndicator';
 import Button from 'flarum/common/components/Button';
 import Dropdown from 'flarum/common/components/Dropdown';
+import Tooltip from 'flarum/common/components/Tooltip';
+import WikiReportModal from './WikiReportModal';
 import PageStructure from 'flarum/forum/components/PageStructure';
 import WikiIndexSidebar from './WikiIndexSidebar';
 import WikiComments from './WikiComments';
@@ -22,7 +24,7 @@ import {
   relatedLimit,
   safeNavigate,
 } from '../utils/helpers';
-import { canEditWikiArticles, canViewWikiHistory } from '../utils/permissions';
+import { canEditWikiArticles, canViewWikiHistory, canReportWikiArticle } from '../utils/permissions';
 import { loadArticle, loadRevisions, WIKI_PAGE_LIMIT, loadArticles } from '../utils/api';
 import { lineDiff, foldContext, hasChanges, DiffLine } from '../utils/diff';
 import { fixedChromeHeight, processWikiHeadings, scrollToAnchor, tocEnabled, tocMinHeadings, WikiTocEntry } from '../utils/toc';
@@ -539,18 +541,38 @@ export default class WikiShowPage extends Page {
     if (author) {
       segments.push(m('span', { className: 'LinkRobinsWiki-byline-author' }, [tr('show.by', 'by '), userLink(author)]));
     }
-    if (editor) {
-      segments.push(
-        m('span', { className: 'LinkRobinsWiki-byline-edited' }, [
-          tr('show.last_edited', 'last edited by '),
-          userLink(editor),
-          ' ',
-          formatDate(article.lastEditedAt() || article.createdAt()),
-        ])
-      );
-    } else {
-      segments.push(m('span', { className: 'LinkRobinsWiki-byline-edited' }, formatDate(article.createdAt())));
-    }
+    // Who last touched it and when is worth having, but not worth a second
+    // name and a timestamp on the line above the article: on a wiki the author
+    // and the last editor are usually the same person, so the byline said it
+    // twice. An icon carries it instead, and the detail is one hover away for
+    // anyone who actually wants it.
+    const when = formatDate(article.lastEditedAt() || article.createdAt());
+    const editorName = editor ? editor.displayName() || editor.username() : '';
+    const detail = editor
+      ? // `user` is a reserved translator param (it expects a User model and
+        // rewrites the placeholder to {username}), so a plain name goes as {name}.
+        trText('show.last_edited_tooltip', 'Last edited by {name} on {date}', { name: editorName, date: when })
+      : trText('show.created_tooltip', 'Written on {date}', { date: when });
+
+    segments.push(
+      m(
+        Tooltip,
+        { text: detail, position: 'bottom' },
+        // A real element rather than a component, which is what Tooltip wants
+        // to attach to, and focusable so the detail is reachable without a
+        // mouse.
+        m(
+          'span',
+          {
+            className: 'LinkRobinsWiki-byline-edited',
+            tabindex: '0',
+            role: 'note',
+            'aria-label': detail,
+          },
+          m('i', { className: 'fas fa-clock-rotate-left', 'aria-hidden': 'true' })
+        )
+      )
+    );
 
     // Interleave with a middot separator so the segments stay on one tidy line
     // with consistent spacing (no run-together names, no oversized gaps).
@@ -569,11 +591,31 @@ export default class WikiShowPage extends Page {
     const isEditor = canEditWikiArticles();
     const isDeleted = !!(article.isDeleted && article.isDeleted());
 
-    if (!canUpdate && !canDelete && !isEditor) {
+    if (!canUpdate && !canDelete && !isEditor && !canReportWikiArticle()) {
       return null;
     }
 
     const menu: any[] = [];
+    // Edit leads the menu: it is the one thing a reader with rights actually
+    // came to do, and it belongs above the destructive items rather than
+    // beside them as a second button competing with the title.
+    if (canUpdate) {
+      menu.push(
+        m(
+          Button,
+          {
+            icon: 'fas fa-pencil-alt',
+            onclick: () => m.route.set(basePath() + BASE_PATH + '/' + encodeURIComponent(article.id()) + '/edit'),
+          },
+          tr('action.edit', 'Edit')
+        )
+      );
+    }
+    // Reporting sits between the reader's action and the editor's ones: it is
+    // what somebody without rights came here to do, and it is not destructive.
+    if (canReportWikiArticle() && !isDeleted) {
+      menu.push(m(Button, { icon: 'fas fa-flag', onclick: () => app.modal.show(WikiReportModal, { article }) }, tr('action.report', 'Report')));
+    }
     if (isEditor && !isDeleted) {
       menu.push(m(Button, { icon: 'fas fa-trash', onclick: () => this._softDelete(article) }, tr('action.delete', 'Delete')));
     }
@@ -584,20 +626,18 @@ export default class WikiShowPage extends Page {
       menu.push(m(Button, { icon: 'fas fa-times', onclick: () => this._deleteForever(article) }, tr('action.delete_forever', 'Delete forever')));
     }
 
-    return m('div', { className: 'LinkRobinsWiki-articleControls' }, [
-      canUpdate
-        ? m(
-            Button,
-            {
-              className: 'Button',
-              icon: 'fas fa-pencil-alt',
-              onclick: () => m.route.set(basePath() + BASE_PATH + '/' + encodeURIComponent(article.id()) + '/edit'),
-            },
-            tr('action.edit', 'Edit')
-          )
-        : null,
-      menu.length ? m(Dropdown, { className: 'Dropdown--icon', icon: 'fas fa-ellipsis-h', buttonClassName: 'Button Button--icon' }, menu) : null,
-    ]);
+    // Nothing to offer: rights that apply to no action on this article (a
+    // delete permission while the article is not deleted, say) used to leave
+    // an empty control bar behind.
+    if (!menu.length) {
+      return null;
+    }
+
+    return m(
+      'div',
+      { className: 'LinkRobinsWiki-articleControls' },
+      m(Dropdown, { className: 'Dropdown--icon', icon: 'fas fa-ellipsis-h', buttonClassName: 'Button Button--icon' }, menu)
+    );
   }
 
   // --- Revision history --------------------------------------------------

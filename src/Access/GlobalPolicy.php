@@ -11,6 +11,7 @@ use Flarum\User\User;
  *   linkrobins-wiki.createArticle -- start new articles
  *   linkrobins-wiki.editArticles  -- edit / moderate any article
  *   linkrobins-wiki.viewHistory   -- view article revision history
+ *   linkrobins-wiki.reportArticle -- report an article to the editors
  *
  * Admins always pass. Category management is admin-only.
  */
@@ -34,6 +35,11 @@ class GlobalPolicy extends AbstractPolicy
     public function viewHistory(User $actor): bool
     {
         return WikiAbilities::canViewHistory($actor);
+    }
+
+    public function reportArticle(User $actor): bool
+    {
+        return WikiAbilities::canReport($actor);
     }
 
     public function manageCategories(User $actor): bool

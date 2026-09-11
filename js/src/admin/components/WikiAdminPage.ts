@@ -2,15 +2,34 @@ import ExtensionPage from 'flarum/admin/components/ExtensionPage';
 import Button from 'flarum/common/components/Button';
 import LoadingIndicator from 'flarum/common/components/LoadingIndicator';
 import CategoryEditorModal from './CategoryEditorModal';
-import { t, loadCategoriesList } from '../utils';
+import { t, tx, loadCategoriesList, loadReports, resolveReport } from '../utils';
 
 export default class WikiAdminPage extends ExtensionPage {
   loading = true;
   categories: any[] = [];
+  reports: any[] = [];
+  reportsLoading = true;
+  showResolved = false;
 
   oninit(vnode: any) {
     super.oninit(vnode);
     this._load();
+    this._loadReports();
+  }
+
+  _loadReports() {
+    this.reportsLoading = true;
+    loadReports(this.showResolved)
+      .then((reports: any[]) => {
+        this.reports = reports || [];
+        this.reportsLoading = false;
+        m.redraw();
+      })
+      .catch(() => {
+        this.reports = [];
+        this.reportsLoading = false;
+        m.redraw();
+      });
   }
 
   _load() {
@@ -31,6 +50,7 @@ export default class WikiAdminPage extends ExtensionPage {
     return m('div', { className: 'ExtensionPage-settings' }, [
       m('div', { className: 'container' }, [
         m('div', { className: 'LinkRobinsWikiAdmin' }, [
+          this._renderReports(),
           this._renderIndexLayout(),
           this._renderLayout(),
           this._renderToc(),
@@ -220,6 +240,81 @@ export default class WikiAdminPage extends ExtensionPage {
         )
       ),
     ]);
+  }
+
+  // --- Reports ---------------------------------------------------------
+
+  _renderReports() {
+    const open = this.reports.filter((r: any) => !r.isResolved()).length;
+
+    return m('section', { className: 'LinkRobinsWikiAdmin-section' }, [
+      m('h2', [
+        t('linkrobins-wiki.admin.reports.heading'),
+        // The count is why this section leads: an editor should see something
+        // is waiting without opening anything.
+        open ? m('span', { className: 'LinkRobinsWikiAdmin-reportBadge' }, String(open)) : null,
+      ]),
+      m('p', { className: 'helpText' }, t('linkrobins-wiki.admin.reports.intro')),
+
+      m(
+        Button,
+        {
+          className: 'Button',
+          icon: this.showResolved ? 'fas fa-eye-slash' : 'fas fa-eye',
+          onclick: () => {
+            this.showResolved = !this.showResolved;
+            this._loadReports();
+          },
+        },
+        this.showResolved ? t('linkrobins-wiki.admin.reports.hide_resolved') : t('linkrobins-wiki.admin.reports.show_resolved')
+      ),
+
+      this.reportsLoading ? m(LoadingIndicator) : this._renderReportList(),
+    ]);
+  }
+
+  _renderReportList() {
+    if (!this.reports.length) {
+      return m('p', { className: 'LinkRobinsWikiAdmin-empty' }, t('linkrobins-wiki.admin.reports.empty'));
+    }
+
+    return m(
+      'ul',
+      { className: 'LinkRobinsWikiAdmin-reports' },
+      this.reports.map((report: any) => {
+        const article = report.article && report.article();
+        const reporter = report.user && report.user();
+        const resolved = report.isResolved();
+
+        return m('li', { className: 'LinkRobinsWikiAdmin-report' + (resolved ? ' is-resolved' : ''), key: 'report-' + report.id() }, [
+          m('div', { className: 'LinkRobinsWikiAdmin-report-main' }, [
+            m('div', { className: 'LinkRobinsWikiAdmin-report-title' }, [
+              article
+                ? m('a', { href: '/wiki/' + article.id(), target: '_blank' }, article.title())
+                : t('linkrobins-wiki.admin.reports.article_gone'),
+              m('span', { className: 'LinkRobinsWikiAdmin-report-reason' }, tx('linkrobins-wiki.admin.reports.reason_' + report.reason())),
+            ]),
+            report.detail() ? m('div', { className: 'LinkRobinsWikiAdmin-report-detail' }, report.detail()) : null,
+            m('div', { className: 'LinkRobinsWikiAdmin-report-meta' }, [
+              reporter ? reporter.displayName() || reporter.username() : t('linkrobins-wiki.admin.reports.deleted_user'),
+              ' \u00b7 ',
+              report.createdAt() ? new Date(report.createdAt()).toLocaleString() : '',
+            ]),
+          ]),
+          m(
+            Button,
+            {
+              className: 'Button Button--small',
+              icon: resolved ? 'fas fa-undo' : 'fas fa-check',
+              onclick: () => {
+                resolveReport(report, !resolved).then(() => this._loadReports());
+              },
+            },
+            resolved ? t('linkrobins-wiki.admin.reports.reopen') : t('linkrobins-wiki.admin.reports.resolve')
+          ),
+        ]);
+      })
+    );
   }
 
   _openEditor(category: any) {

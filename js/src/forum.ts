@@ -7,6 +7,7 @@ import WikiCategory from './common/models/WikiCategory';
 import WikiArticle from './common/models/WikiArticle';
 import WikiRevision from './common/models/WikiRevision';
 import WikiComment from './common/models/WikiComment';
+import WikiReport from './common/models/WikiReport';
 
 import WikiIndexPage from './forum/components/WikiIndexPage';
 import WikiComposePage from './forum/components/WikiComposePage';
@@ -20,6 +21,7 @@ app.initializers.add('linkrobins-wiki', () => {
   // Register the store models so app.store.find()/createRecord() return typed,
   // cached, relationship-aware records for our resources.
   app.store.models['linkrobins-wiki-categories'] = WikiCategory;
+  app.store.models['linkrobins-wiki-reports'] = WikiReport;
   app.store.models['linkrobins-wiki-articles'] = WikiArticle;
   app.store.models['linkrobins-wiki-revisions'] = WikiRevision;
   app.store.models['linkrobins-wiki-comments'] = WikiComment;

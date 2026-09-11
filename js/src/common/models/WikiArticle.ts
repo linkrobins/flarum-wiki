@@ -15,6 +15,7 @@ export default class WikiArticle extends Model {
   faq = Model.attribute<{ question: string; answer: string; answerHtml: string }[]>('faq');
   content = Model.attribute<string>('content');
   contentHtml = Model.attribute<string>('contentHtml');
+  excerpt = Model.attribute<string>('excerpt');
   revisionCount = Model.attribute<number>('revisionCount');
 
   canUpdate = Model.attribute<boolean>('canUpdate');

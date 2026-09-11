@@ -91,3 +91,74 @@
 .LinkRobinsWikiCategoryEditorModal-delete {
     margin-left: auto;
 }
+
+// --- Reports -------------------------------------------------------------
+
+.LinkRobinsWikiAdmin-reportBadge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 1px 8px;
+    border-radius: 10px;
+    background: var(--alert-error-bg, #e0484f);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    vertical-align: middle;
+}
+
+.LinkRobinsWikiAdmin-reports {
+    list-style: none;
+    margin: 16px 0 0;
+    padding: 0;
+}
+
+.LinkRobinsWikiAdmin-report {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--control-bg, rgba(0,0,0,0.08));
+
+    &:last-child {
+        border-bottom: 0;
+    }
+
+    // A resolved report is history: still readable, no longer competing with
+    // the open ones above it.
+    &.is-resolved {
+        opacity: 0.55;
+    }
+}
+
+.LinkRobinsWikiAdmin-report-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.LinkRobinsWikiAdmin-report-title {
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.LinkRobinsWikiAdmin-report-reason {
+    font-weight: normal;
+    font-size: 0.8rem;
+    padding: 1px 8px;
+    border-radius: 4px;
+    background: var(--control-bg, rgba(0,0,0,0.06));
+}
+
+.LinkRobinsWikiAdmin-report-detail {
+    margin-top: 4px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.LinkRobinsWikiAdmin-report-meta {
+    margin-top: 4px;
+    font-size: 0.8rem;
+    color: var(--muted-color, #888);
+}

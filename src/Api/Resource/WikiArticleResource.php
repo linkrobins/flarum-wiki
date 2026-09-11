@@ -9,8 +9,10 @@ use Flarum\Api\Resource\AbstractDatabaseResource;
 use Flarum\Api\Schema;
 use Flarum\Api\Sort\SortColumn;
 use Flarum\Locale\TranslatorInterface;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Eloquent\Builder;
 use LinkRobins\Wiki\Access\WikiAbilities;
+use LinkRobins\Wiki\Event;
 use LinkRobins\Wiki\Faq;
 use LinkRobins\Wiki\Slug;
 use LinkRobins\Wiki\WikiArticle;
@@ -19,12 +21,14 @@ use LinkRobins\Wiki\WikiCategory;
 use Psr\Log\LoggerInterface;
 use Tobyz\JsonApiServer\Context;
 use Tobyz\JsonApiServer\Exception\BadRequestException;
+use s9e\TextFormatter\Utils as TextFormatterUtils;
 
 class WikiArticleResource extends AbstractDatabaseResource
 {
     public function __construct(
         protected TranslatorInterface $translator,
         protected LoggerInterface $log,
+        protected Dispatcher $events,
     ) {
     }
 
@@ -155,6 +159,40 @@ class WikiArticleResource extends AbstractDatabaseResource
                     // Route through HasFormattedContent so the formatter parses
                     // the source into the trait's representation in `content`.
                     $article->setContentAttribute($value, $context->getActor());
+                }),
+
+            // A plain-text opening for the index, so a card can say what an
+            // article is about instead of repeating its category and author.
+            //
+            // Built from the stored representation rather than from rendered
+            // HTML: `removeFormatting()` drops the `<s>`/`<e>` nodes holding
+            // the source markup and returns the text, which costs one XML
+            // parse per article instead of a full render of every body on the
+            // page.
+            Schema\Str::make('excerpt')
+                ->get(function (WikiArticle $article) {
+                    // `content` is an accessor that unparses back to Markdown
+                    // source; `parsed_content` is the stored representation,
+                    // which is what removeFormatting() expects.
+                    $content = (string) $article->parsed_content;
+
+                    if ($content === '') {
+                        return '';
+                    }
+
+                    try {
+                        $plain = TextFormatterUtils::removeFormatting($content);
+                    } catch (\Throwable $e) {
+                        // A body that will not parse should cost a card its
+                        // excerpt, not the whole index its listing.
+                        $this->log->warning('[linkrobins/wiki] excerpt failed', ['exception' => $e]);
+
+                        return '';
+                    }
+
+                    $plain = trim((string) preg_replace('/\s+/u', ' ', $plain));
+
+                    return mb_strimwidth($plain, 0, 180, '…');
                 }),
 
             Schema\Str::make('contentHtml')
@@ -377,6 +415,8 @@ class WikiArticleResource extends AbstractDatabaseResource
             }
         }
 
+        $this->events->dispatch(new Event\ArticleCreated($model, $context->getActor()));
+
         return $model;
     }
 
@@ -400,6 +440,30 @@ class WikiArticleResource extends AbstractDatabaseResource
 
         if ($model->isDirty('slug') && $model->slug !== null) {
             $this->assertSlugUsable($model->slug, (int) $model->id);
+        }
+
+        return $model;
+    }
+
+    /**
+     * Announce what the update actually was.
+     *
+     * Decided from `wasChanged()` rather than from dirtiness in `updating()`,
+     * so nothing has to be carried between the two hooks on a resource the
+     * container may well be reusing.
+     */
+    public function updated(object $model, Context $context): ?object
+    {
+        /** @var WikiArticle $model */
+        $event = match (true) {
+            $model->wasChanged('deleted_at') && $model->deleted_at !== null => Event\ArticleDeleted::class,
+            $model->wasChanged('deleted_at') && $model->deleted_at === null => Event\ArticleRestored::class,
+            $model->wasChanged('title') || $model->wasChanged('content') => Event\ArticleEdited::class,
+            default => null,
+        };
+
+        if ($event !== null) {
+            $this->events->dispatch(new $event($model, $context->getActor()));
         }
 
         return $model;
