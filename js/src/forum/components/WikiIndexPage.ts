@@ -252,6 +252,9 @@ export default class WikiIndexPage extends Page {
             tr('search.clear', 'Clear')
           )
         : null,
+      // Sits beside the search button rather than in the header below: the
+      // search field was running the full width of the page on its own.
+      this._renderNewArticleButton(),
     ]);
   }
 
@@ -269,17 +272,15 @@ export default class WikiIndexPage extends Page {
     const label = cat ? cat.name() : tr('nav', 'Wiki');
     return m('header', { className: 'LinkRobinsWiki-header' }, [
       m('h1', { className: 'LinkRobinsWiki-title' }, [m('i', { className: 'fas fa-book' }), ' ', label]),
-      // Full-width mode has no sidebar, and the sidebar is where "New article"
-      // lives, so without this there is no way to start one at all.
-      this._renderNewArticleButton(),
     ]);
   }
 
   /**
    * The "New article" button, for the layouts that have nowhere else to put it.
    *
-   * Only in full-width mode: the sidebar already carries this button, and two
-   * of them on one page is worse than none.
+   * Rendered into the search row, to the right of the search button. Only in
+   * full-width mode: the sidebar already carries this button, and two of them
+   * on one page is worse than none.
    */
   _renderNewArticleButton() {
     if (!fullWidth() || !canCreateWikiArticle()) {
