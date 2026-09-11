@@ -269,7 +269,35 @@ export default class WikiIndexPage extends Page {
     const label = cat ? cat.name() : tr('nav', 'Wiki');
     return m('header', { className: 'LinkRobinsWiki-header' }, [
       m('h1', { className: 'LinkRobinsWiki-title' }, [m('i', { className: 'fas fa-book' }), ' ', label]),
+      // Full-width mode has no sidebar, and the sidebar is where "New article"
+      // lives, so without this there is no way to start one at all.
+      this._renderNewArticleButton(),
     ]);
+  }
+
+  /**
+   * The "New article" button, for the layouts that have nowhere else to put it.
+   *
+   * Only in full-width mode: the sidebar already carries this button, and two
+   * of them on one page is worse than none.
+   */
+  _renderNewArticleButton() {
+    if (!fullWidth() || !canCreateWikiArticle()) {
+      return null;
+    }
+
+    const href = basePath() + BASE_PATH + '/new';
+
+    return m(
+      Button,
+      {
+        icon: 'fas fa-plus',
+        className: 'Button Button--primary LinkRobinsWiki-newArticleButton',
+        title: tr('index.new_article_tooltip', 'Write a new article'),
+        onclick: (e: any) => safeNavigate(href, e),
+      },
+      tr('index.new_article', 'New article')
+    );
   }
 
   // --- Block rendering --------------------------------------------------

@@ -9,6 +9,14 @@
     > h1, > .LinkRobinsWiki-title {
         flex: 1;
     }
+
+    // The button is full width in the sidebar, which is right there and wrong
+    // in a header row, so it is sized to its own content here.
+    > .LinkRobinsWiki-newArticleButton {
+        flex: 0 0 auto;
+        align-self: flex-start;
+        width: auto;
+    }
 }
 
 .LinkRobinsWiki-title {
@@ -39,6 +47,15 @@
 // it gets, and worst of all in full-width mode. Auto-fill decides the count
 // from the room available instead of from a setting: one column on a phone,
 // two or three in the normal container, more at full width.
+// Flarum's .Page-content is a flex item with the default `min-width: auto`, so
+// it will not shrink below the minimum width its contents report. A grid of
+// `minmax(320px, 1fr)` tracks reports a large one, which pushed the whole
+// column (search box included) past the right edge of the page whenever the
+// sidebar was showing. Scoped to the wiki so nothing else on the forum moves.
+.LinkRobinsWiki-page .Page-content {
+    min-width: 0;
+}
+
 .LinkRobinsWiki-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
