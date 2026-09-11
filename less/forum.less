@@ -10,17 +10,7 @@
         flex: 1;
     }
 
-    // The button is full width in the sidebar, which is right there and wrong
-    // in a header row, so it is sized to its own content here. On a phone core
-    // lifts the wrapper out into the header, where none of this applies.
-    > .LinkRobinsWiki-newArticleControl {
-        flex: 0 0 auto;
-        align-self: flex-start;
 
-        > .LinkRobinsWiki-newArticleButton {
-            width: auto;
-        }
-    }
 }
 
 .LinkRobinsWiki-title {
@@ -959,6 +949,17 @@
     &-input {
         flex: 1 1 auto;
         min-width: 0;
+    }
+
+    // The button is full width in the sidebar, which is right there and wrong
+    // beside a search field, so it is sized to its own content here. On a phone
+    // core lifts the wrapper into the header and none of this applies.
+    .LinkRobinsWiki-newArticleControl {
+        flex: 0 0 auto;
+
+        > .LinkRobinsWiki-newArticleButton {
+            width: auto;
+        }
     }
 
     &-go, &-clear {
