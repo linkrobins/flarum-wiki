@@ -300,7 +300,7 @@ export default class WikiAdminPage extends ExtensionPage {
                 m(
                   'span',
                   { className: 'LinkRobinsWikiAdmin-report-reason' },
-                  tx('linkrobins-wiki.forum.report.reason_' + report.reason())
+                  tx('linkrobins-wiki.admin.reports.reason_' + report.reason())
                 ),
               ]),
               report.detail() ? m('div', { className: 'LinkRobinsWikiAdmin-report-detail' }, report.detail()) : null,

@@ -53,6 +53,13 @@ linkrobins-wiki:
       reopen: 'Reopen'
       article_gone: 'Article deleted'
       deleted_user: 'Deleted account'
+      # Repeated from the forum block on purpose: the admin frontend is
+      # only sent the admin namespace, so forum.* keys render raw here.
+      reason_inaccurate: 'Inaccurate'
+      reason_outdated: 'Out of date'
+      reason_off_topic: 'Does not belong'
+      reason_duplicate: 'Duplicate'
+      reason_other: 'Something else'
     categories:
       heading: 'Wiki categories'
       intro: 'Create and organize the categories articles can be filed under.'

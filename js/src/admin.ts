@@ -1,11 +1,15 @@
 import WikiCategory from './common/models/WikiCategory';
 import WikiReport from './common/models/WikiReport';
+import WikiArticle from './common/models/WikiArticle';
 import WikiAdminPage from './admin/components/WikiAdminPage';
 import { tx } from './admin/utils';
 
 app.initializers.add('linkrobins-wiki', () => {
   app.store.models['linkrobins-wiki-categories'] = WikiCategory;
   app.store.models['linkrobins-wiki-reports'] = WikiReport;
+  // The queue includes the article each report is about; without its model
+  // registered the store cannot hydrate it and every row reads "deleted".
+  app.store.models['linkrobins-wiki-articles'] = WikiArticle;
 
   if (!app.registry || typeof app.registry.for !== 'function') {
     console.warn('[linkrobins/wiki] app.registry not available');
