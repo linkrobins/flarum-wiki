@@ -11,11 +11,15 @@
     }
 
     // The button is full width in the sidebar, which is right there and wrong
-    // in a header row, so it is sized to its own content here.
-    > .LinkRobinsWiki-newArticleButton {
+    // in a header row, so it is sized to its own content here. On a phone core
+    // lifts the wrapper out into the header, where none of this applies.
+    > .LinkRobinsWiki-newArticleControl {
         flex: 0 0 auto;
         align-self: flex-start;
-        width: auto;
+
+        > .LinkRobinsWiki-newArticleButton {
+            width: auto;
+        }
     }
 }
 
