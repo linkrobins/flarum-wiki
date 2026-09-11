@@ -4,7 +4,7 @@ import extractText from 'flarum/common/utils/extractText';
 import LoadingIndicator from 'flarum/common/components/LoadingIndicator';
 import PageStructure from 'flarum/forum/components/PageStructure';
 import WikiIndexSidebar from './WikiIndexSidebar';
-import { tr } from '../utils/translate';
+import { tr, trText } from '../utils/translate';
 import {
   basePath,
   BASE_PATH,
@@ -288,15 +288,25 @@ export default class WikiIndexPage extends Page {
 
     const href = basePath() + BASE_PATH + '/new';
 
+    // Wrapped in App-primaryControl, which core positions into the top right of
+    // the header on a phone and strips down to its icon. The sidebar's copy of
+    // this button gets the same treatment through its itemClassName; without
+    // the wrapper the full-width layout would put a full-width text button
+    // across a phone screen.
     return m(
-      Button,
-      {
-        icon: 'fas fa-plus',
-        className: 'Button Button--primary LinkRobinsWiki-newArticleButton',
-        title: tr('index.new_article_tooltip', 'Write a new article'),
-        onclick: (e: any) => safeNavigate(href, e),
-      },
-      tr('index.new_article', 'New article')
+      'div',
+      { className: 'App-primaryControl LinkRobinsWiki-newArticleControl' },
+      m(
+        Button,
+        {
+          icon: 'fas fa-plus',
+          className: 'Button Button--primary LinkRobinsWiki-newArticleButton',
+          title: tr('index.new_article_tooltip', 'Write a new article'),
+          'aria-label': trText('index.new_article', 'New article'),
+          onclick: (e: any) => safeNavigate(href, e),
+        },
+        tr('index.new_article', 'New article')
+      )
     );
   }
 
