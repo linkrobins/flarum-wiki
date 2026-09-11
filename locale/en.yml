@@ -131,6 +131,8 @@ linkrobins-wiki:
       related_heading: 'Related articles'
       by: 'by '
       last_edited: 'last edited by '
+      last_edited_tooltip: 'Last edited by {user} on {date}'
+      created_tooltip: 'Written on {date}'
       history: 'History ({count})'
       no_history: 'No revisions yet.'
       load_more_history: 'Load older revisions'

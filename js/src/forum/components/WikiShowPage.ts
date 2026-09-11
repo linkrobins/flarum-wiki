@@ -2,6 +2,7 @@ import Page from 'flarum/common/components/Page';
 import LoadingIndicator from 'flarum/common/components/LoadingIndicator';
 import Button from 'flarum/common/components/Button';
 import Dropdown from 'flarum/common/components/Dropdown';
+import Tooltip from 'flarum/common/components/Tooltip';
 import PageStructure from 'flarum/forum/components/PageStructure';
 import WikiIndexSidebar from './WikiIndexSidebar';
 import WikiComments from './WikiComments';
@@ -539,18 +540,36 @@ export default class WikiShowPage extends Page {
     if (author) {
       segments.push(m('span', { className: 'LinkRobinsWiki-byline-author' }, [tr('show.by', 'by '), userLink(author)]));
     }
-    if (editor) {
-      segments.push(
-        m('span', { className: 'LinkRobinsWiki-byline-edited' }, [
-          tr('show.last_edited', 'last edited by '),
-          userLink(editor),
-          ' ',
-          formatDate(article.lastEditedAt() || article.createdAt()),
-        ])
-      );
-    } else {
-      segments.push(m('span', { className: 'LinkRobinsWiki-byline-edited' }, formatDate(article.createdAt())));
-    }
+    // Who last touched it and when is worth having, but not worth a second
+    // name and a timestamp on the line above the article: on a wiki the author
+    // and the last editor are usually the same person, so the byline said it
+    // twice. An icon carries it instead, and the detail is one hover away for
+    // anyone who actually wants it.
+    const when = formatDate(article.lastEditedAt() || article.createdAt());
+    const editorName = editor ? editor.displayName() || editor.username() : '';
+    const detail = editor
+      ? trText('show.last_edited_tooltip', 'Last edited by {user} on {date}', { user: editorName, date: when })
+      : trText('show.created_tooltip', 'Written on {date}', { date: when });
+
+    segments.push(
+      m(
+        Tooltip,
+        { text: detail, position: 'bottom' },
+        // A real element rather than a component, which is what Tooltip wants
+        // to attach to, and focusable so the detail is reachable without a
+        // mouse.
+        m(
+          'span',
+          {
+            className: 'LinkRobinsWiki-byline-edited',
+            tabindex: '0',
+            role: 'note',
+            'aria-label': detail,
+          },
+          m('i', { className: 'fas fa-clock-rotate-left', 'aria-hidden': 'true' })
+        )
+      )
+    );
 
     // Interleave with a middot separator so the segments stay on one tidy line
     // with consistent spacing (no run-together names, no oversized gaps).

@@ -235,6 +235,21 @@
     font-weight: 600;
 }
 
+// The edit detail lives in this icon's tooltip. Give it a real hit area and a
+// focus ring, since it is the only way to reach that detail.
+.LinkRobinsWiki-byline-edited {
+    display: inline-flex;
+    align-items: center;
+    cursor: help;
+    opacity: 0.65;
+    transition: opacity 0.12s;
+
+    &:hover,
+    &:focus-visible {
+        opacity: 1;
+    }
+}
+
 .LinkRobinsWiki-articleBody {
     line-height: 1.6;
     word-wrap: break-word;
