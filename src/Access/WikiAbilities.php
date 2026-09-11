@@ -24,6 +24,7 @@ class WikiAbilities
     public const EDIT_ARTICLES = 'linkrobins-wiki.editArticles';
     public const COMMENT = 'linkrobins-wiki.comment';
     public const VIEW_HISTORY = 'linkrobins-wiki.viewHistory';
+    public const REPORT_ARTICLE = 'linkrobins-wiki.reportArticle';
 
     /**
      * Whether the actor may edit and moderate any article (admins always can).
@@ -85,6 +86,19 @@ class WikiAbilities
     public static function canViewHistory(User $actor): bool
     {
         return $actor->isAdmin() || $actor->hasPermission(self::VIEW_HISTORY);
+    }
+
+    /**
+     * Whether the actor may report an article to the editors (admins always
+     * can). Members only: a report queue a guest can write to is a spam queue.
+     */
+    public static function canReport(User $actor): bool
+    {
+        if ($actor->isGuest()) {
+            return false;
+        }
+
+        return $actor->isAdmin() || $actor->hasPermission(self::REPORT_ARTICLE);
     }
 
     /**

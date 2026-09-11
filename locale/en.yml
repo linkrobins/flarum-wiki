@@ -185,6 +185,7 @@ linkrobins-wiki:
     slug_taken: 'Another article already uses that URL slug.'
     faq_too_many: 'An article can have at most {max} FAQ entries.'
     article_required: 'An article is required.'
+    report_already_open: 'You have already reported this article. An editor will look at it.'
     article_not_found: 'Article not found.'
     comment_required: 'Comment content is required.'
     comment_soft_delete_first: 'A comment must be deleted before it can be permanently removed.'

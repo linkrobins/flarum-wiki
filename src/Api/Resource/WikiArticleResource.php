@@ -9,8 +9,10 @@ use Flarum\Api\Resource\AbstractDatabaseResource;
 use Flarum\Api\Schema;
 use Flarum\Api\Sort\SortColumn;
 use Flarum\Locale\TranslatorInterface;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Eloquent\Builder;
 use LinkRobins\Wiki\Access\WikiAbilities;
+use LinkRobins\Wiki\Event;
 use LinkRobins\Wiki\Faq;
 use LinkRobins\Wiki\Slug;
 use LinkRobins\Wiki\WikiArticle;
@@ -26,6 +28,7 @@ class WikiArticleResource extends AbstractDatabaseResource
     public function __construct(
         protected TranslatorInterface $translator,
         protected LoggerInterface $log,
+        protected Dispatcher $events,
     ) {
     }
 
@@ -412,6 +415,8 @@ class WikiArticleResource extends AbstractDatabaseResource
             }
         }
 
+        $this->events->dispatch(new Event\ArticleCreated($model, $context->getActor()));
+
         return $model;
     }
 
@@ -435,6 +440,30 @@ class WikiArticleResource extends AbstractDatabaseResource
 
         if ($model->isDirty('slug') && $model->slug !== null) {
             $this->assertSlugUsable($model->slug, (int) $model->id);
+        }
+
+        return $model;
+    }
+
+    /**
+     * Announce what the update actually was.
+     *
+     * Decided from `wasChanged()` rather than from dirtiness in `updating()`,
+     * so nothing has to be carried between the two hooks on a resource the
+     * container may well be reusing.
+     */
+    public function updated(object $model, Context $context): ?object
+    {
+        /** @var WikiArticle $model */
+        $event = match (true) {
+            $model->wasChanged('deleted_at') && $model->deleted_at !== null => Event\ArticleDeleted::class,
+            $model->wasChanged('deleted_at') && $model->deleted_at === null => Event\ArticleRestored::class,
+            $model->wasChanged('title') || $model->wasChanged('content') => Event\ArticleEdited::class,
+            default => null,
+        };
+
+        if ($event !== null) {
+            $this->events->dispatch(new $event($model, $context->getActor()));
         }
 
         return $model;

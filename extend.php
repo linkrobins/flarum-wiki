@@ -6,6 +6,7 @@ use LinkRobins\Wiki\Access;
 use LinkRobins\Wiki\Api\Resource\WikiArticleResource;
 use LinkRobins\Wiki\Api\Resource\WikiCategoryResource;
 use LinkRobins\Wiki\Api\Resource\WikiCommentResource;
+use LinkRobins\Wiki\Api\Resource\WikiReportResource;
 use LinkRobins\Wiki\Api\Resource\WikiRevisionResource;
 use LinkRobins\Wiki\Search\ArticleFulltextFilter;
 use LinkRobins\Wiki\Search\ArticleSearcher;
@@ -15,6 +16,8 @@ use LinkRobins\Wiki\Search\RevisionSearcher;
 use LinkRobins\Wiki\WikiArticle;
 use LinkRobins\Wiki\WikiCategory;
 use LinkRobins\Wiki\WikiComment;
+use LinkRobins\Wiki\Event;
+use LinkRobins\Wiki\WikiReport;
 use LinkRobins\Wiki\WikiRevision;
 use LinkRobins\Wiki\WikiServiceProvider;
 
@@ -65,6 +68,7 @@ return [
     (new Extend\ApiResource(WikiArticleResource::class)),
     (new Extend\ApiResource(WikiRevisionResource::class)),
     (new Extend\ApiResource(WikiCommentResource::class)),
+    (new Extend\ApiResource(WikiReportResource::class)),
 
     (new Extend\Policy())
         ->modelPolicy(WikiArticle::class,  Access\WikiArticlePolicy::class)
@@ -143,5 +147,35 @@ return [
                         return false;
                     }
                 }),
+        ]),
+
+    // Reports and article changes go to the audit log when flarum/audit is
+    // installed, so an editor who already lives in that trail sees them without
+    // watching the wiki's own queue. Conditional, so this is a no-op otherwise:
+    // the Audit extender only exists while that extension is enabled.
+    (new Extend\Conditional())
+        ->whenExtensionEnabled('flarum-audit', fn () => [
+            (new \Flarum\Audit\Extend\Audit())
+                ->listen(Event\ArticleReported::class, 'wiki.article_reported', fn (Event\ArticleReported $e) => [
+                    'article' => $e->report->article_id,
+                    'title' => $e->report->article?->title,
+                    'reason' => $e->report->reason,
+                ])
+                ->listen(Event\ArticleCreated::class, 'wiki.article_created', fn (Event\ArticleCreated $e) => [
+                    'article' => $e->article->id,
+                    'title' => $e->article->title,
+                ])
+                ->listen(Event\ArticleEdited::class, 'wiki.article_edited', fn (Event\ArticleEdited $e) => [
+                    'article' => $e->article->id,
+                    'title' => $e->article->title,
+                ])
+                ->listen(Event\ArticleDeleted::class, 'wiki.article_deleted', fn (Event\ArticleDeleted $e) => [
+                    'article' => $e->article->id,
+                    'title' => $e->article->title,
+                ])
+                ->listen(Event\ArticleRestored::class, 'wiki.article_restored', fn (Event\ArticleRestored $e) => [
+                    'article' => $e->article->id,
+                    'title' => $e->article->title,
+                ]),
         ]),
 ];
