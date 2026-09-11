@@ -26,7 +26,8 @@
     },
     "require-dev": {
         "flarum/testing": "^2.0",
-        "flarum/phpstan": "^2.0"
+        "flarum/phpstan": "^2.0",
+        "flarum/audit": "^2.0"
     },
     "minimum-stability": "beta",
     "prefer-stable": true,

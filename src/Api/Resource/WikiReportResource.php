@@ -181,7 +181,6 @@ class WikiReportResource extends AbstractDatabaseResource
 
     public function updating(object $model, Context $context): ?object
     {
-        /** @var WikiReport $model */
         // Only the resolved flag may move. Everything else is what the reporter
         // said, and an editor rewriting that would make the queue worthless.
         foreach (['article_id', 'user_id', 'reason', 'detail'] as $frozen) {

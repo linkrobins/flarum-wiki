@@ -549,9 +549,9 @@ export default class WikiShowPage extends Page {
     const when = formatDate(article.lastEditedAt() || article.createdAt());
     const editorName = editor ? editor.displayName() || editor.username() : '';
     const detail = editor
-      // `user` is a reserved translator param (it expects a User model and
-      // rewrites the placeholder to {username}), so a plain name goes as {name}.
-      ? trText('show.last_edited_tooltip', 'Last edited by {name} on {date}', { name: editorName, date: when })
+      ? // `user` is a reserved translator param (it expects a User model and
+        // rewrites the placeholder to {username}), so a plain name goes as {name}.
+        trText('show.last_edited_tooltip', 'Last edited by {name} on {date}', { name: editorName, date: when })
       : trText('show.created_tooltip', 'Written on {date}', { date: when });
 
     segments.push(
@@ -614,13 +614,7 @@ export default class WikiShowPage extends Page {
     // Reporting sits between the reader's action and the editor's ones: it is
     // what somebody without rights came here to do, and it is not destructive.
     if (canReportWikiArticle() && !isDeleted) {
-      menu.push(
-        m(
-          Button,
-          { icon: 'fas fa-flag', onclick: () => app.modal.show(WikiReportModal, { article }) },
-          tr('action.report', 'Report')
-        )
-      );
+      menu.push(m(Button, { icon: 'fas fa-flag', onclick: () => app.modal.show(WikiReportModal, { article }) }, tr('action.report', 'Report')));
     }
     if (isEditor && !isDeleted) {
       menu.push(m(Button, { icon: 'fas fa-trash', onclick: () => this._softDelete(article) }, tr('action.delete', 'Delete')));

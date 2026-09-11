@@ -47,19 +47,16 @@ class WikiReport extends AbstractModel
         'resolved_at',
     ];
 
-    /** @return BelongsTo<WikiArticle, self> */
     public function article(): BelongsTo
     {
         return $this->belongsTo(WikiArticle::class, 'article_id');
     }
 
-    /** @return BelongsTo<User, self> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    /** @return BelongsTo<User, self> */
     public function resolvedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'resolved_by_user_id');

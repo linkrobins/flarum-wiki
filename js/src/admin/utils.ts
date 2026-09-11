@@ -53,14 +53,16 @@ export function deleteCategory(category: any): Promise<any> {
  * queue is worked from the top and a resolved report is history.
  */
 export function loadReports(includeResolved: boolean): Promise<any> {
-  return app.store.find('linkrobins-wiki-reports', {
-    sort: '-createdAt',
-    include: 'user,article,resolvedBy',
-    page: { limit: 50 },
-  }).then((reports: any[]) => {
-    const all = reports || [];
-    return includeResolved ? all : all.filter((r: any) => !r.isResolved());
-  });
+  return app.store
+    .find('linkrobins-wiki-reports', {
+      sort: '-createdAt',
+      include: 'user,article,resolvedBy',
+      page: { limit: 50 },
+    })
+    .then((reports: any[]) => {
+      const all = reports || [];
+      return includeResolved ? all : all.filter((r: any) => !r.isResolved());
+    });
 }
 
 export function resolveReport(report: any, resolved: boolean): Promise<any> {

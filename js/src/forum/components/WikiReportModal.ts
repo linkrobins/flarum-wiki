@@ -40,9 +40,7 @@ export default class WikiReportModal extends FormModal {
   content() {
     return m('div', { className: 'Modal-body' }, [
       m(Form, [
-        this.article
-          ? m('p', { className: 'helpText' }, trText('report.intro', 'Editors will see this along with the article.'))
-          : null,
+        this.article ? m('p', { className: 'helpText' }, trText('report.intro', 'Editors will see this along with the article.')) : null,
 
         m('div', { className: 'Form-group' }, [
           m('label', tr('report.reason_label', 'What is wrong with it?')),
@@ -104,10 +102,7 @@ export default class WikiReportModal extends FormModal {
 
     app.store
       .createRecord('linkrobins-wiki-reports')
-      .save(
-        { reason: this.reason, detail: this.detail },
-        { relationships: { article: this.article } }
-      )
+      .save({ reason: this.reason, detail: this.detail }, { relationships: { article: this.article } })
       .then(() => {
         this.saving = false;
         this.hide();
