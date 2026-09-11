@@ -307,10 +307,21 @@ class ReportArticleTest extends TestCase
     {
         $this->report(['reason' => 'outdated']);
 
-        $this->database()->table('linkrobins_wiki_articles')->where('id', 1)->delete();
+        // Through the api, so this covers what the extension guarantees rather
+        // than what one database happens to do: the foreign key cascades on
+        // MySQL, MariaDB and PostgreSQL, but SQLite does not enforce it, so the
+        // rows are removed in code on the way through.
+        $this->send(
+            $this->request('PATCH', '/api/linkrobins-wiki-articles/1', [
+                'authenticatedAs' => 1,
+                'json' => ['data' => ['type' => 'linkrobins-wiki-articles', 'id' => '1', 'attributes' => ['isDeleted' => true]]],
+            ])
+        );
 
-        // The foreign key cascades, so a queue never shows rows pointing at an
-        // article that is gone.
+        $response = $this->send($this->request('DELETE', '/api/linkrobins-wiki-articles/1', ['authenticatedAs' => 1]));
+
+        $this->assertLessThan(300, $response->getStatusCode());
+        $this->assertEquals(0, $this->database()->table('linkrobins_wiki_articles')->count());
         $this->assertEquals(0, $this->database()->table('linkrobins_wiki_reports')->count());
     }
 }
