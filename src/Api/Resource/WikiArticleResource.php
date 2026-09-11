@@ -13,6 +13,7 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Eloquent\Builder;
 use LinkRobins\Wiki\Access\WikiAbilities;
 use LinkRobins\Wiki\Event;
+use LinkRobins\Wiki\WikiReport;
 use LinkRobins\Wiki\Faq;
 use LinkRobins\Wiki\Slug;
 use LinkRobins\Wiki\WikiArticle;
@@ -483,6 +484,13 @@ class WikiArticleResource extends AbstractDatabaseResource
                 $this->translator->trans('linkrobins-wiki.api.article_soft_delete_first')
             );
         }
+
+        // Reports are removed here rather than left to the foreign key. The
+        // cascade is real on MySQL, MariaDB and PostgreSQL, but SQLite does not
+        // enforce foreign keys on this connection, so a forum on SQLite would
+        // keep report rows pointing at an article that is gone. Doing it in
+        // code makes the behaviour the same on every driver.
+        WikiReport::query()->where('article_id', $model->id)->delete();
 
         $model->forceDelete();
     }
