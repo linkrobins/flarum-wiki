@@ -5,7 +5,7 @@ import Button from 'flarum/common/components/Button';
 import PageStructure from 'flarum/forum/components/PageStructure';
 import WikiIndexSidebar from './WikiIndexSidebar';
 import { tr } from '../utils/translate';
-import { basePath, BASE_PATH, articleHref, showError, fullWidth, pageClassName, emptySidebar } from '../utils/helpers';
+import { basePath, BASE_PATH, articleHref, showError, fullWidth, pageClassName, emptySidebar, mobileTitle } from '../utils/helpers';
 import { canCreateWikiArticle } from '../utils/permissions';
 import { loadArticle, loadCategories, createArticle, updateArticle } from '../utils/api';
 import { wikiComposerAvailable, wikiComposerOpenFor, openWikiComposer, wikiComposerPreview } from '../utils/composer';
@@ -113,7 +113,7 @@ export default class WikiComposePage extends Page {
               }
             },
       },
-      m('div', { className: 'LinkRobinsWiki-container' }, this._renderContent())
+      m('div', { className: 'LinkRobinsWiki-container' }, [mobileTitle(), this._renderContent()])
     );
   }
 

@@ -15,6 +15,7 @@ import {
   fullWidth,
   pageClassName,
   emptySidebar,
+  mobileTitle,
   executeContentScripts,
 } from '../utils/helpers';
 import { canCreateWikiArticle } from '../utils/permissions';
@@ -182,7 +183,7 @@ export default class WikiIndexPage extends Page {
         // request never fires; see emptySidebar() for why it is not just null.
         sidebar: fullWidth() ? emptySidebar : () => this._renderSidebar(),
       },
-      m('div', { className: 'LinkRobinsWiki-container' }, this._renderBody())
+      m('div', { className: 'LinkRobinsWiki-container' }, [mobileTitle(), this._renderBody()])
     );
   }
 

@@ -67,6 +67,29 @@ export function relatedLimit(): number {
 // then treats as a vnode and reads `.view` off, which blanks the whole page.
 // Omitting the callback entirely hits the same path. So full-width mode hands
 // it an empty element and the LESS collapses the column.
+/**
+ * The wiki's title for the phone header, in full-width mode only.
+ *
+ * Core positions any `.App-titleControl` found on the page into the middle of
+ * the phone header, between the drawer toggle and the primary control. The
+ * wiki's copy of that control normally rides in the index sidebar, but
+ * full-width mode hides the sidebar outright, which left the bar on a phone
+ * showing a hamburger, a plus, and nothing at all between them.
+ *
+ * `--text` is core's own non-interactive variant of the control (the one Modal
+ * and HeaderList use), so this picks up the header's line height, colour and
+ * ellipsis without any styling of its own. The stylesheet hides it above phone
+ * width, where the sidebar's own control does this job and every wiki page
+ * already carries a real heading.
+ */
+export function mobileTitle(): any {
+  if (!fullWidth()) {
+    return null;
+  }
+
+  return m('h4', { className: 'App-titleControl App-titleControl--text LinkRobinsWiki-mobileTitle' }, trText('nav', 'Wiki'));
+}
+
 export function emptySidebar(): any {
   return m('div', { className: 'LinkRobinsWiki-sidebarOff' });
 }
