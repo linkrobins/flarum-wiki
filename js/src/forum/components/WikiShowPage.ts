@@ -20,6 +20,7 @@ import {
   fullWidth,
   pageClassName,
   emptySidebar,
+  mobileTitle,
   relatedEnabled,
   relatedLimit,
   safeNavigate,
@@ -162,7 +163,7 @@ export default class WikiShowPage extends Page {
               }
             },
       },
-      m('div', { className: 'LinkRobinsWiki-container' }, this._renderContent())
+      m('div', { className: 'LinkRobinsWiki-container' }, [mobileTitle(), this._renderContent()])
     );
   }
 

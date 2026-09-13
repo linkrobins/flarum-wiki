@@ -929,6 +929,20 @@
 // PageStructure always emits a .Page-sidebar element even with no sidebar
 // callback, so collapse the column as well as hiding the empty div. The width
 // and gap are custom properties on .Page, which is where our class lands.
+// The phone-header title for full-width mode (see mobileTitle() in helpers).
+// Core positions .App-titleControl into the header only at phone width; above
+// that it would render as a stray "Wiki" heading above the page content, where
+// the sidebar's own control and the page's real heading already do the job.
+.LinkRobinsWiki-mobileTitle {
+    display: none;
+}
+
+@media (max-width: 767px) {
+    .LinkRobinsWiki-mobileTitle {
+        display: block;
+    }
+}
+
 .LinkRobinsWiki-page--full {
     --sidebar-width: 0;
     --gap: 0;
