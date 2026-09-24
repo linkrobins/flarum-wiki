@@ -8,10 +8,10 @@ use Flarum\User\User;
 /**
  * Global wiki permissions.
  *
- *   linkrobins-wiki.createArticle -- start new articles
- *   linkrobins-wiki.editArticles  -- edit / moderate any article
- *   linkrobins-wiki.viewHistory   -- view article revision history
- *   linkrobins-wiki.reportArticle -- report an article to the editors
+ *   lr-wiki.createArticle -- start new articles
+ *   lr-wiki.editArticles  -- edit / moderate any article
+ *   lr-wiki.viewHistory   -- view article revision history
+ *   lr-wiki.reportArticle -- report an article to the editors
  *
  * Admins always pass. Category management is admin-only.
  */

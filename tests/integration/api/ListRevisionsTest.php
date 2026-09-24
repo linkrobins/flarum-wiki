@@ -49,7 +49,7 @@ class ListRevisionsTest extends TestCase
     private function revokeFromGuests(): void
     {
         $this->database()->table('group_permission')
-            ->where('permission', 'linkrobins-wiki.viewHistory')
+            ->where('permission', 'lr-wiki.viewHistory')
             ->where('group_id', Group::GUEST_ID)
             ->delete();
     }
@@ -58,7 +58,7 @@ class ListRevisionsTest extends TestCase
     {
         $this->database()->table('group_permission')->insert([
             'group_id' => Group::MEMBER_ID,
-            'permission' => 'linkrobins-wiki.viewHistory',
+            'permission' => 'lr-wiki.viewHistory',
         ]);
     }
 

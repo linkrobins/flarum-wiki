@@ -26,8 +26,8 @@ Then enable the extension in admin → Extensions.
 
 ## Permissions
 
-- `linkrobins-wiki.createArticle` — start new articles.
-- `linkrobins-wiki.editArticles` — edit and moderate (soft-delete / restore) any article, not just one's own.
+- `lr-wiki.createArticle` — start new articles.
+- `lr-wiki.editArticles` — edit and moderate (soft-delete / restore) any article, not just one's own.
 
 Authors can always edit their own articles. Admins bypass every check.
 Permanent deletion is admin-only.

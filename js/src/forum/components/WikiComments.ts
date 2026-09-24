@@ -12,7 +12,7 @@ import { wikiComposerAvailable, wikiComposerOpenFor, openWikiComposer, wikiCompo
 /**
  * Comment thread for an article. Reads comments via the API and posts / edits
  * them through Flarum's real docked composer (the same UX as discussion
- * replies). Posting is gated by the linkrobins-wiki.comment permission.
+ * replies). Posting is gated by the lr-wiki.comment permission.
  */
 export default class WikiComments extends Component {
   article: any = null;

@@ -38,7 +38,7 @@ class ReportArticleTest extends TestCase
                 $this->normalUser(), // id 2, a member
             ],
             'group_permission' => [
-                ['permission' => 'linkrobins-wiki.reportArticle', 'group_id' => Group::MEMBER_ID],
+                ['permission' => 'lr-wiki.reportArticle', 'group_id' => Group::MEMBER_ID],
             ],
             'linkrobins_wiki_categories' => [
                 ['id' => 1, 'name' => 'Guides', 'slug' => 'guides', 'position' => 0, 'created_at' => Carbon::now(), 'updated_at' => Carbon::now()],
@@ -118,7 +118,7 @@ class ReportArticleTest extends TestCase
     public function users_without_the_permission_cannot_report(): void
     {
         $this->database()->table('group_permission')
-            ->where('permission', 'linkrobins-wiki.reportArticle')
+            ->where('permission', 'lr-wiki.reportArticle')
             ->delete();
 
         $response = $this->report(['reason' => 'other']);
