@@ -20,11 +20,11 @@ use LinkRobins\Wiki\WikiArticle;
  */
 class WikiAbilities
 {
-    public const CREATE_ARTICLE = 'linkrobins-wiki.createArticle';
-    public const EDIT_ARTICLES = 'linkrobins-wiki.editArticles';
-    public const COMMENT = 'linkrobins-wiki.comment';
-    public const VIEW_HISTORY = 'linkrobins-wiki.viewHistory';
-    public const REPORT_ARTICLE = 'linkrobins-wiki.reportArticle';
+    public const CREATE_ARTICLE = 'lr-wiki.createArticle';
+    public const EDIT_ARTICLES = 'lr-wiki.editArticles';
+    public const COMMENT = 'lr-wiki.comment';
+    public const VIEW_HISTORY = 'lr-wiki.viewHistory';
+    public const REPORT_ARTICLE = 'lr-wiki.reportArticle';
 
     /**
      * Whether the actor may edit and moderate any article (admins always can).

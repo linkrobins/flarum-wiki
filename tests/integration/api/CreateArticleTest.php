@@ -30,7 +30,7 @@ class CreateArticleTest extends TestCase
                 $this->normalUser(), // id 2
             ],
             'group_permission' => [
-                ['permission' => 'linkrobins-wiki.createArticle', 'group_id' => Group::MEMBER_ID],
+                ['permission' => 'lr-wiki.createArticle', 'group_id' => Group::MEMBER_ID],
             ],
             'linkrobins_wiki_categories' => [
                 ['id' => 1, 'name' => 'Guides', 'slug' => 'guides', 'position' => 0, 'created_at' => Carbon::now(), 'updated_at' => Carbon::now()],
@@ -77,7 +77,7 @@ class CreateArticleTest extends TestCase
     public function users_without_the_permission_cannot_create(): void
     {
         $this->database()->table('group_permission')
-            ->where('permission', 'linkrobins-wiki.createArticle')
+            ->where('permission', 'lr-wiki.createArticle')
             ->delete();
 
         $response = $this->send(

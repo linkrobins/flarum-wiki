@@ -21,7 +21,7 @@ app.initializers.add('linkrobins-wiki', () => {
     if (typeof app.registry.registerPermission === 'function') {
       app.registry.registerPermission(
         {
-          permission: 'linkrobins-wiki.createArticle',
+          permission: 'lr-wiki.createArticle',
           icon: 'fas fa-pencil-alt',
           label: tx('linkrobins-wiki.admin.permissions.create_article'),
         },
@@ -30,7 +30,7 @@ app.initializers.add('linkrobins-wiki', () => {
       );
       app.registry.registerPermission(
         {
-          permission: 'linkrobins-wiki.comment',
+          permission: 'lr-wiki.comment',
           icon: 'fas fa-comment',
           label: tx('linkrobins-wiki.admin.permissions.comment'),
         },
@@ -39,7 +39,7 @@ app.initializers.add('linkrobins-wiki', () => {
       );
       app.registry.registerPermission(
         {
-          permission: 'linkrobins-wiki.editArticles',
+          permission: 'lr-wiki.editArticles',
           icon: 'fas fa-edit',
           label: tx('linkrobins-wiki.admin.permissions.edit_articles'),
         },
@@ -48,7 +48,7 @@ app.initializers.add('linkrobins-wiki', () => {
       );
       app.registry.registerPermission(
         {
-          permission: 'linkrobins-wiki.viewHistory',
+          permission: 'lr-wiki.viewHistory',
           icon: 'fas fa-history',
           label: tx('linkrobins-wiki.admin.permissions.view_history'),
           allowGuest: true,

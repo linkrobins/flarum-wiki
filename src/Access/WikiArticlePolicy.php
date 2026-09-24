@@ -10,7 +10,7 @@ use LinkRobins\Wiki\WikiArticle;
  * Per-article permissions.
  *
  *   view   -- everyone (the wiki is public)
- *   update -- the author, or an editor (linkrobins-wiki.editArticles)
+ *   update -- the author, or an editor (lr-wiki.editArticles)
  *   delete -- admin only (permanent removal; soft-delete / restore is the
  *             isDeleted toggle on the resource, gated by editArticles)
  */

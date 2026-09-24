@@ -33,7 +33,7 @@ class ArticleFaqTest extends TestCase
                 $this->normalUser(), // id 2
             ],
             'group_permission' => [
-                ['permission' => 'linkrobins-wiki.createArticle', 'group_id' => Group::MEMBER_ID],
+                ['permission' => 'lr-wiki.createArticle', 'group_id' => Group::MEMBER_ID],
             ],
             'linkrobins_wiki_articles' => [
                 ['id' => 1, 'user_id' => 2, 'title' => 'Existing guide', 'slug' => 'existing-guide', 'content' => '<t><p>Body.</p></t>', 'last_edited_at' => $now, 'created_at' => $now, 'updated_at' => $now],
