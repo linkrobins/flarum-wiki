@@ -64,7 +64,7 @@
     },
     "extra": {
         "flarum-extension": {
-            "title": "Link Robins Wiki",
+            "title": "LR Wiki",
             "category": "feature",
             "icon": {
                 "name": "fas fa-book",
