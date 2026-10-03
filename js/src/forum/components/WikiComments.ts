@@ -6,7 +6,7 @@ import Dropdown from 'flarum/common/components/Dropdown';
 import { tr } from '../utils/translate';
 import { executeContentScripts, formatDate, userLink, showError } from '../utils/helpers';
 import { canCommentWiki } from '../utils/permissions';
-import { loadComments, postComment, WIKI_PAGE_LIMIT } from '../utils/api';
+import { loadComments, postComment, WIKI_PAGE_LIMIT, QUIET } from '../utils/api';
 import { wikiComposerAvailable, wikiComposerOpenFor, openWikiComposer, wikiComposerPreview } from '../utils/composer';
 
 /**
@@ -40,7 +40,10 @@ export default class WikiComments extends Component {
   _load() {
     this.loading = true;
     this.hasMore = false;
-    loadComments(this.article.id())
+    // Loaded automatically with the article, so a failure stays quiet; the
+    // reader asked for nothing yet. "Load more" below is a click, and keeps
+    // the usual alert.
+    loadComments(this.article.id(), 0, QUIET)
       .then((comments: any[]) => {
         this.comments = comments || [];
         this.hasMore = this.comments.length >= WIKI_PAGE_LIMIT;

@@ -7,14 +7,15 @@ import ItemList from 'flarum/common/utils/ItemList';
 import { tr } from '../utils/translate';
 import { basePath, BASE_PATH, safeNavigate } from '../utils/helpers';
 import { canCreateWikiArticle } from '../utils/permissions';
-import { loadCategories } from '../utils/api';
+import { loadCategories, QUIET } from '../utils/api';
 
 export default class WikiIndexSidebar extends IndexSidebar {
   categories: any[] = [];
 
   oninit(vnode: any) {
     super.oninit(vnode);
-    loadCategories()
+    // Quiet: an empty category list is not worth an alert.
+    loadCategories(QUIET)
       .then((cats: any[]) => {
         this.categories = cats || [];
         m.redraw();

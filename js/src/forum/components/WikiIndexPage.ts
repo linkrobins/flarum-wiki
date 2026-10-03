@@ -19,7 +19,7 @@ import {
   executeContentScripts,
 } from '../utils/helpers';
 import { canCreateWikiArticle } from '../utils/permissions';
-import { loadArticles, loadArticle, loadCategories } from '../utils/api';
+import { loadArticles, loadArticle, loadCategories, QUIET } from '../utils/api';
 import { parseIndexLayout, WikiBlock } from '../utils/indexLayout';
 
 export default class WikiIndexPage extends Page {
@@ -85,7 +85,7 @@ export default class WikiIndexPage extends Page {
       this.blocks = parseIndexLayout(this.layout);
       // Load categories once (for slug resolution + the [categories] block),
       // then fetch each dynamic block's data.
-      loadCategories()
+      loadCategories(QUIET)
         .then((cats: any[]) => {
           this.categories = cats || [];
           this._fetchBlocks();
@@ -116,7 +116,11 @@ export default class WikiIndexPage extends Page {
       // ordering before the sort is applied, so title matches lead and recency
       // breaks ties.
     }
-    loadArticles(params)
+    // The plain index (no category, no search) was preloaded by the server.
+    const first = !this.category && !this.query.trim() ? this._preloadedList() : null;
+    // Quiet: the page shows its own "could not load" state, so an alert on
+    // top only repeats it (and is all a crawler blocked from /api would see).
+    (first ? Promise.resolve(first) : loadArticles(params, QUIET))
       .then((articles: any[]) => {
         this.articles = articles || [];
         this.loading = false;
@@ -128,6 +132,21 @@ export default class WikiIndexPage extends Page {
         console.error('[linkrobins/wiki] index load failed:', err);
         m.redraw();
       });
+  }
+
+  /**
+   * The first page of articles the server put in the page payload, if this
+   * is the page it was served for. Core hands it out once, so navigating
+   * away and back fetches as usual.
+   */
+  _preloadedList(): any[] | null {
+    try {
+      const preloaded: any = app.preloadedApiDocument();
+      if (Array.isArray(preloaded) && (preloaded.length === 0 || preloaded[0].data?.type === 'linkrobins-wiki-articles')) {
+        return preloaded;
+      }
+    } catch (e) {}
+    return null;
   }
 
   _resolveCategoryId(value: string): string | null {
@@ -150,7 +169,7 @@ export default class WikiIndexPage extends Page {
           // limit=5 title=Recent]" is for.
           params.sort = 'position,-lastEditedAt';
         }
-        loadArticles(params)
+        loadArticles(params, QUIET)
           .then((arts: any[]) => {
             this.blockData[i] = arts || [];
             m.redraw();
@@ -160,7 +179,7 @@ export default class WikiIndexPage extends Page {
             m.redraw();
           });
       } else if (block.type === 'article' && block.attrs.id) {
-        loadArticle(block.attrs.id)
+        loadArticle(block.attrs.id, QUIET)
           .then((a: any) => {
             this.blockData[i] = a;
             m.redraw();

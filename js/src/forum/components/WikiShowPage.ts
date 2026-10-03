@@ -26,7 +26,7 @@ import {
   safeNavigate,
 } from '../utils/helpers';
 import { canEditWikiArticles, canViewWikiHistory, canReportWikiArticle } from '../utils/permissions';
-import { loadArticle, loadRevisions, WIKI_PAGE_LIMIT, loadArticles } from '../utils/api';
+import { loadArticle, loadRevisions, WIKI_PAGE_LIMIT, loadArticles, QUIET } from '../utils/api';
 import { lineDiff, foldContext, hasChanges, DiffLine } from '../utils/diff';
 import { fixedChromeHeight, processWikiHeadings, scrollToAnchor, tocEnabled, tocMinHeadings, WikiTocEntry } from '../utils/toc';
 
@@ -113,7 +113,7 @@ export default class WikiShowPage extends Page {
     this._tocHashHandled = false;
     m.redraw();
 
-    loadArticle(m.route.param('id'))
+    this._preloadedOrFetch(m.route.param('id'))
       .then((article: any) => {
         this.article = article;
         this.loading = false;
@@ -129,6 +129,24 @@ export default class WikiShowPage extends Page {
         this.loading = false;
         m.redraw();
       });
+  }
+
+  // The server puts the article in the page payload on first load, the way
+  // core does for a discussion. Using it skips a request, and it is what keeps
+  // the article on screen for a crawler that cannot reach the API: Googlebot
+  // obeys robots.txt for the requests a page makes, and SEO extensions such as
+  // fof/sitemap disallow /api. Core only hands the document out while the URL
+  // is still the one the page was served for, and only once.
+  _preloadedOrFetch(id: string): Promise<any> {
+    try {
+      // pushPayload hands back the stored model with the raw document on it.
+      const preloaded: any = app.preloadedApiDocument();
+      if (preloaded && !Array.isArray(preloaded) && preloaded.payload?.data?.type === 'linkrobins-wiki-articles') {
+        return Promise.resolve(preloaded);
+      }
+    } catch (e) {}
+
+    return loadArticle(id);
   }
 
   // If the article was reached by id but has a slug, quietly rewrite the
@@ -683,7 +701,7 @@ export default class WikiShowPage extends Page {
 
     // One extra, because the article being read is in its own category and
     // gets filtered out below.
-    loadArticles({ filter: { categoryId: category.id() }, sort: 'position,-lastEditedAt', page: { limit: limit + 1 } })
+    loadArticles({ filter: { categoryId: category.id() }, sort: 'position,-lastEditedAt', page: { limit: limit + 1 } }, QUIET)
       .then((articles: any[]) => {
         this.related = (articles || []).filter((a: any) => String(a.id()) !== String(article.id())).slice(0, limit);
         m.redraw();
