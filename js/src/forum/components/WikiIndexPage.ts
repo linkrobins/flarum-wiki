@@ -216,7 +216,10 @@ export default class WikiIndexPage extends Page {
       return [
         // The admin's layout carries its own headings, so the search box sits
         // on its own here rather than under a title the layout did not ask for.
-        m('header', { className: 'LinkRobinsWiki-header LinkRobinsWiki-indexHeader LinkRobinsWiki-indexHeader--searchOnly' }, [this._renderSearch(), this._renderNewArticleButton()]),
+        m('header', { className: 'LinkRobinsWiki-header LinkRobinsWiki-indexHeader LinkRobinsWiki-indexHeader--searchOnly' }, [
+          this._renderSearch(),
+          this._renderNewArticleButton(),
+        ]),
         m(
           'div',
           { className: 'LinkRobinsWiki-home' },
@@ -270,7 +273,11 @@ export default class WikiIndexPage extends Page {
         ])
       : m('h1', { className: 'LinkRobinsWiki-title' }, [m('i', { className: 'fas fa-book' }), ' ', cat ? cat.name() : tr('nav', 'Wiki')]);
 
-    return m('header', { className: 'LinkRobinsWiki-header LinkRobinsWiki-indexHeader' }, [title, this._renderSearch(), this._renderNewArticleButton()]);
+    return m('header', { className: 'LinkRobinsWiki-header LinkRobinsWiki-indexHeader' }, [
+      title,
+      this._renderSearch(),
+      this._renderNewArticleButton(),
+    ]);
   }
 
   /**
