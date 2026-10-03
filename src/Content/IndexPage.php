@@ -34,7 +34,12 @@ class IndexPage
             json: $this->api
                 ->withoutErrorHandling()
                 ->withParentRequest($request)
+                // The same query the index page's own first load makes
+                // (utils/api.ts loadArticles), so the first page can be handed
+                // to it below instead of being fetched again.
                 ->withQueryParams([
+                    'sort' => '-lastEditedAt',
+                    'include' => 'user,category',
                     'page' => ['offset' => ($page - 1) * self::PER_PAGE, 'limit' => self::PER_PAGE],
                 ])
                 ->get('/linkrobins-wiki-articles')
@@ -66,6 +71,16 @@ class IndexPage
         $document->canonicalUrl = $this->url->to('forum')->route('linkrobins-wiki.index');
         $document->page = $page;
         $document->hasNextPage = isset($apiDocument->links->next);
+
+        // Preload the first page for the index page, the way core preloads
+        // the discussion list. Without it the page fetched its list from /api
+        // after loading, which Googlebot does not do on forums whose
+        // robots.txt disallows /api (fof/sitemap's does): the wiki index came
+        // out as an empty list and an error. Later pages are not preloaded;
+        // the index page only ever shows the first.
+        if ($page === 1) {
+            $document->payload['apiDocument'] = $apiDocument;
+        }
 
         return $document;
     }

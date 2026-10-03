@@ -13,7 +13,20 @@ export const WIKI_PAGE_LIMIT = 100;
 
 // --- Reads (cached + relationship-resolved via the store) ---------------
 
-export function loadArticles(params?: Record<string, any>): Promise<any> {
+/**
+ * Request options for a load the page makes on its own, behind the scenes,
+ * where a failure is not worth an alert: the section just stays empty. The
+ * caller's own .catch still runs, since the request still rejects.
+ *
+ * This matters for search engines. Googlebot obeys robots.txt for the
+ * requests a page makes while rendering, and SEO extensions such as
+ * fof/sitemap disallow /api; without this, its render of every article ended
+ * in Flarum's "connection" alert even though the article itself (preloaded
+ * into the page) displayed fine.
+ */
+export const QUIET = { errorHandler: () => {} };
+
+export function loadArticles(params?: Record<string, any>, options?: Record<string, any>): Promise<any> {
   return app.store.find(
     'linkrobins-wiki-articles',
     Object.assign(
@@ -23,14 +36,21 @@ export function loadArticles(params?: Record<string, any>): Promise<any> {
         include: 'user,category',
       },
       params || {}
-    )
+    ),
+    undefined,
+    options || {}
   );
 }
 
-export function loadArticle(id: string | number): Promise<WikiArticle> {
-  return app.store.find('linkrobins-wiki-articles', String(id), {
-    include: 'user,category,lastEditedBy',
-  });
+export function loadArticle(id: string | number, options?: Record<string, any>): Promise<WikiArticle> {
+  return app.store.find(
+    'linkrobins-wiki-articles',
+    String(id),
+    {
+      include: 'user,category,lastEditedBy',
+    },
+    options || {}
+  );
 }
 
 export function loadRevisions(articleId: string | number, offset = 0): Promise<any> {
@@ -45,20 +65,30 @@ export function loadRevisions(articleId: string | number, offset = 0): Promise<a
   });
 }
 
-export function loadCategories(): Promise<any> {
-  return app.store.find('linkrobins-wiki-categories', {
-    sort: 'position',
-    page: { limit: 100 },
-  });
+export function loadCategories(options?: Record<string, any>): Promise<any> {
+  return app.store.find(
+    'linkrobins-wiki-categories',
+    {
+      sort: 'position',
+      page: { limit: 100 },
+    },
+    undefined,
+    options || {}
+  );
 }
 
-export function loadComments(articleId: string | number, offset = 0): Promise<any> {
-  return app.store.find('linkrobins-wiki-comments', {
-    sort: 'createdAt',
-    filter: { articleId },
-    page: { limit: WIKI_PAGE_LIMIT, offset },
-    include: 'user',
-  });
+export function loadComments(articleId: string | number, offset = 0, options?: Record<string, any>): Promise<any> {
+  return app.store.find(
+    'linkrobins-wiki-comments',
+    {
+      sort: 'createdAt',
+      filter: { articleId },
+      page: { limit: WIKI_PAGE_LIMIT, offset },
+      include: 'user',
+    },
+    undefined,
+    options || {}
+  );
 }
 
 export function postComment(article: any, content: string): Promise<any> {

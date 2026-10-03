@@ -124,6 +124,34 @@ class ServerRenderedPagesTest extends TestCase
     }
 
     #[Test]
+    public function index_preloads_its_first_page_for_the_app(): void
+    {
+        [$status, $html] = $this->page('/wiki');
+        $this->assertEquals(200, $status);
+
+        // Same reason as the article page: the index must not need /api.
+        preg_match('#<script id="flarum-json-payload" type="application/json">(.*?)</script>#s', $html, $m);
+        $payload = json_decode($m[1] ?? '{}', true);
+        $types = array_unique(array_column($payload['apiDocument']['data'] ?? [], 'type'));
+        $this->assertEquals(['linkrobins-wiki-articles'], array_values($types));
+        // Categories come along, since the index groups articles by them.
+        $this->assertArrayHasKey('included', $payload['apiDocument']);
+    }
+
+    #[Test]
+    public function later_index_pages_are_not_preloaded(): void
+    {
+        // The test request does not parse a query string out of the path, so
+        // the page number goes in as a query parameter.
+        $html = $this->send($this->request('GET', '/wiki')->withQueryParams(['page' => '2']))->getBody()->getContents();
+
+        preg_match('#<script id="flarum-json-payload" type="application/json">(.*?)</script>#s', $html, $m);
+        $payload = json_decode($m[1] ?? '{}', true);
+        // Core always sends the key; nothing is preloaded into it here.
+        $this->assertEmpty($payload['apiDocument'] ?? null);
+    }
+
+    #[Test]
     public function editor_pages_are_noindex(): void
     {
         [, $html] = $this->page('/wiki/new');

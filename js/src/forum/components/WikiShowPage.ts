@@ -26,7 +26,7 @@ import {
   safeNavigate,
 } from '../utils/helpers';
 import { canEditWikiArticles, canViewWikiHistory, canReportWikiArticle } from '../utils/permissions';
-import { loadArticle, loadRevisions, WIKI_PAGE_LIMIT, loadArticles } from '../utils/api';
+import { loadArticle, loadRevisions, WIKI_PAGE_LIMIT, loadArticles, QUIET } from '../utils/api';
 import { lineDiff, foldContext, hasChanges, DiffLine } from '../utils/diff';
 import { fixedChromeHeight, processWikiHeadings, scrollToAnchor, tocEnabled, tocMinHeadings, WikiTocEntry } from '../utils/toc';
 
@@ -701,7 +701,7 @@ export default class WikiShowPage extends Page {
 
     // One extra, because the article being read is in its own category and
     // gets filtered out below.
-    loadArticles({ filter: { categoryId: category.id() }, sort: 'position,-lastEditedAt', page: { limit: limit + 1 } })
+    loadArticles({ filter: { categoryId: category.id() }, sort: 'position,-lastEditedAt', page: { limit: limit + 1 } }, QUIET)
       .then((articles: any[]) => {
         this.related = (articles || []).filter((a: any) => String(a.id()) !== String(article.id())).slice(0, limit);
         m.redraw();
