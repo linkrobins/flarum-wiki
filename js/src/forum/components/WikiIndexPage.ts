@@ -28,10 +28,13 @@ export default class WikiIndexPage extends Page {
   articles: any[] = [];
   category: string | null = null;
 
-  // Search state. `query` is what the list was loaded with (from the route);
-  // `queryDraft` is what is currently in the box, so typing doesn't refetch.
+  // Search state. `query` is what the list is loaded with; `queryDraft` is
+  // what is in the box. Typing applies the draft after a short pause, the
+  // same as the support ticket search. A ?q= link still opens a search.
   query = '';
   queryDraft = '';
+  _routeQuery = '';
+  _searchTimer: any = null;
 
   // Custom-layout state.
   layout: string = '';
@@ -44,22 +47,33 @@ export default class WikiIndexPage extends Page {
     try {
       app.setTitle(tr('nav', 'Wiki'));
     } catch (e) {}
+    this._routeQuery = (m.route.param('q') || '').toString().trim();
+    this.query = this._routeQuery;
+    this.queryDraft = this.query;
     this._init();
   }
 
   onbeforeupdate(vnode: any) {
     const next = m.route.param('category') || null;
-    const nextQuery = (m.route.param('q') || '').toString();
-    if (next !== this.category || nextQuery !== this.query) {
+    const nextQuery = (m.route.param('q') || '').toString().trim();
+    if (next !== this.category || nextQuery !== this._routeQuery) {
+      // The route changed (sidebar category, or a ?q= link): it wins over
+      // whatever was typed.
+      this._routeQuery = nextQuery;
+      this.query = nextQuery;
+      this.queryDraft = nextQuery;
       Promise.resolve().then(() => this._init());
     }
     return true;
   }
 
+  onremove(vnode: any) {
+    clearTimeout(this._searchTimer);
+    super.onremove(vnode);
+  }
+
   _init() {
     this.category = m.route.param('category') || null;
-    this.query = (m.route.param('q') || '').toString();
-    this.queryDraft = this.query;
     this.error = null;
     this.blockData = {};
 
@@ -200,7 +214,9 @@ export default class WikiIndexPage extends Page {
     // Custom homepage layout (only when no category filter or search is on).
     if (!this.category && !this.query.trim() && this.blocks.length) {
       return [
-        this._renderSearch(),
+        // The admin's layout carries its own headings, so the search box sits
+        // on its own here rather than under a title the layout did not ask for.
+        m('header', { className: 'LinkRobinsWiki-header LinkRobinsWiki-indexHeader LinkRobinsWiki-indexHeader--searchOnly' }, [this._renderSearch(), this._renderNewArticleButton()]),
         m(
           'div',
           { className: 'LinkRobinsWiki-home' },
@@ -213,22 +229,17 @@ export default class WikiIndexPage extends Page {
     // (a search or a category); grouped when this is the index of everything.
     const body = this.category || this.query.trim() ? this._renderList(this.articles) : this._renderGrouped(this.articles);
 
-    return [this._renderSearch(), this._renderHeader(), body];
+    return [this._renderHeader(), body];
   }
 
-  // The wiki's own search box. Submitting puts the term in the URL (?q=), so a
-  // result page can be linked, bookmarked and gone back to.
+  /**
+   * The wiki's search box, beside the page title. Searches title and body as
+   * you type, after a short pause. Built to match the support ticket search
+   * exactly, so the two extensions read as one product; change both together.
+   */
   _renderSearch() {
-    const submit = (e?: any) => {
-      if (e) e.preventDefault();
-      const value = (this.queryDraft || '').trim();
-      const params: any = {};
-      if (value) params.q = value;
-      if (this.category) params.category = this.category;
-      m.route.set(basePath() + BASE_PATH, params);
-    };
-
-    return m('form', { className: 'LinkRobinsWiki-search', onsubmit: submit, role: 'search' }, [
+    return m('div', { className: 'LinkRobinsWiki-search', role: 'search' }, [
+      m('i', { className: 'fas fa-search LinkRobinsWiki-search-icon', 'aria-hidden': 'true' }),
       m('input', {
         className: 'FormControl LinkRobinsWiki-search-input',
         type: 'search',
@@ -237,49 +248,35 @@ export default class WikiIndexPage extends Page {
         'aria-label': extractText(tr('search.placeholder', 'Search the wiki')),
         oninput: (e: any) => {
           this.queryDraft = e.target.value;
+          clearTimeout(this._searchTimer);
+          this._searchTimer = setTimeout(() => {
+            const next = (this.queryDraft || '').trim();
+            if (next === this.query) return;
+            this.query = next;
+            this._init();
+          }, 300);
         },
       }),
-      m(Button, { className: 'Button LinkRobinsWiki-search-go', type: 'submit', icon: 'fas fa-search' }, tr('search.button', 'Search')),
-      this.query.trim()
-        ? m(
-            Button,
-            {
-              className: 'Button Button--link LinkRobinsWiki-search-clear',
-              onclick: () => {
-                this.queryDraft = '';
-                submit();
-              },
-            },
-            tr('search.clear', 'Clear')
-          )
-        : null,
-      // Sits beside the search button rather than in the header below: the
-      // search field was running the full width of the page on its own.
-      this._renderNewArticleButton(),
     ]);
   }
 
   _renderHeader() {
     const cat = this.category ? this.categories.find((c: any) => String(c.id()) === String(this.category)) : null;
-    if (this.query.trim()) {
-      return m('header', { className: 'LinkRobinsWiki-header' }, [
-        m('h1', { className: 'LinkRobinsWiki-title' }, [
+    const title = this.query.trim()
+      ? m('h1', { className: 'LinkRobinsWiki-title' }, [
           m('i', { className: 'fas fa-search' }),
           ' ',
           tr('search.results_heading', 'Results for "{query}"', { query: this.query.trim() }),
-        ]),
-      ]);
-    }
-    const label = cat ? cat.name() : tr('nav', 'Wiki');
-    return m('header', { className: 'LinkRobinsWiki-header' }, [
-      m('h1', { className: 'LinkRobinsWiki-title' }, [m('i', { className: 'fas fa-book' }), ' ', label]),
-    ]);
+        ])
+      : m('h1', { className: 'LinkRobinsWiki-title' }, [m('i', { className: 'fas fa-book' }), ' ', cat ? cat.name() : tr('nav', 'Wiki')]);
+
+    return m('header', { className: 'LinkRobinsWiki-header LinkRobinsWiki-indexHeader' }, [title, this._renderSearch(), this._renderNewArticleButton()]);
   }
 
   /**
    * The "New article" button, for the layouts that have nowhere else to put it.
    *
-   * Rendered into the search row, to the right of the search button. Only in
+   * Rendered into the header, to the right of the search box. Only in
    * full-width mode: the sidebar already carries this button, and two of them
    * on one page is worse than none.
    */

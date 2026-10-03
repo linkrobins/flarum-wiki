@@ -35,29 +35,29 @@ class ArticleFulltextFilter extends AbstractFulltextFilter
         $driver = $query->getConnection()->getDriverName();
 
         // Raw SQL bypasses the query grammar, which is what applies the table
-        // prefix, so every raw fragment below uses a hand-wrapped identifier.
-        // The non-raw builder calls can keep the plain name.
+        // prefix, so every fragment below uses a grammar-wrapped identifier.
         $grammar = $query->getQuery()->getGrammar();
         $wrapped = [
             'title' => $grammar->wrap('linkrobins_wiki_articles.title'),
             'content' => $grammar->wrap('linkrobins_wiki_articles.content'),
         ];
 
+        // Every LIKE names its escape character. SQLite has no default one, so
+        // without ESCAPE a search for "50%" or "user_name" treated the escaped
+        // wildcard as a literal backslash and found nothing there.
         $query->where(function ($query) use ($driver, $term, $wrapped) {
             foreach (['title', 'content'] as $column) {
-                $plain = 'linkrobins_wiki_articles.'.$column;
-
                 match ($driver) {
-                    'pgsql' => $query->orWhere($plain, 'ilike', $term),
-                    'sqlite' => $query->orWhereRaw("LOWER({$wrapped[$column]}) LIKE ?", [mb_strtolower($term)]),
-                    default => $query->orWhere($plain, 'like', $term),
+                    'pgsql' => $query->orWhereRaw("{$wrapped[$column]} ILIKE ? ESCAPE '!'", [$term]),
+                    'sqlite' => $query->orWhereRaw("LOWER({$wrapped[$column]}) LIKE ? ESCAPE '!'", [mb_strtolower($term)]),
+                    default => $query->orWhereRaw("{$wrapped[$column]} LIKE ? ESCAPE '!'", [$term]),
                 };
             }
         });
 
         $titleMatch = $driver === 'pgsql'
-            ? "CASE WHEN {$wrapped['title']} ILIKE ? THEN 0 ELSE 1 END"
-            : "CASE WHEN LOWER({$wrapped['title']}) LIKE ? THEN 0 ELSE 1 END";
+            ? "CASE WHEN {$wrapped['title']} ILIKE ? ESCAPE '!' THEN 0 ELSE 1 END"
+            : "CASE WHEN LOWER({$wrapped['title']}) LIKE ? ESCAPE '!' THEN 0 ELSE 1 END";
 
         $query->orderByRaw($titleMatch, [mb_strtolower($term)]);
     }
@@ -68,6 +68,8 @@ class ArticleFulltextFilter extends AbstractFulltextFilter
      */
     private function escapeLike(string $value): string
     {
-        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
+        // '!' rather than a backslash: a backslash means different things in
+        // MySQL and PostgreSQL string literals, '!' means nothing to either.
+        return str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $value);
     }
 }

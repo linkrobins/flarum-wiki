@@ -156,4 +156,37 @@ class ListArticlesTest extends TestCase
 
         $this->assertSame(['Ordered first'], $titles);
     }
+
+    /** @return list<string> */
+    private function searchTitles(string $q): array
+    {
+        $response = $this->send(
+            $this->request('GET', '/api/linkrobins-wiki-articles')->withQueryParams(['filter' => ['q' => $q]])
+        );
+        $this->assertEquals(200, $response->getStatusCode());
+
+        return array_map(
+            fn (array $row) => $row['attributes']['title'],
+            json_decode($response->getBody()->getContents(), true)['data']
+        );
+    }
+
+    #[Test]
+    public function search_wildcards_are_literal_on_every_database(): void
+    {
+        // Inserted here rather than in setUp so the listing tests above keep
+        // their exact article sets.
+        $this->app();
+        $this->database()->table('linkrobins_wiki_articles')->insert([
+            'id' => 5, 'user_id' => 2, 'title' => 'Save 50% today', 'content' => '<t><p>Body.</p></t>',
+            'last_edited_at' => \Carbon\Carbon::now(), 'created_at' => \Carbon\Carbon::now(), 'updated_at' => \Carbon\Carbon::now(),
+        ]);
+
+        // Escaped wildcards must match themselves. SQLite has no default LIKE
+        // escape character, so this found nothing there before ESCAPE '!'.
+        $this->assertSame(['Save 50% today'], $this->searchTitles('50%'));
+        // And must not act as wildcards: unescaped, '_' would match every title.
+        $this->assertSame([], $this->searchTitles('_'));
+        $this->assertSame([], $this->searchTitles('!'));
+    }
 }
