@@ -6,6 +6,7 @@ use LinkRobins\Wiki\Access;
 use LinkRobins\Wiki\Api\Resource\WikiArticleResource;
 use LinkRobins\Wiki\Content;
 use LinkRobins\Wiki\Seo;
+use LinkRobins\Wiki\Sitemap;
 use LinkRobins\Wiki\Api\Resource\WikiCategoryResource;
 use LinkRobins\Wiki\Api\Resource\WikiCommentResource;
 use LinkRobins\Wiki\Api\Resource\WikiReportResource;
@@ -40,6 +41,15 @@ return [
         ->whenExtensionEnabled('fof-seo', fn () => [
             (new \FoF\Seo\Extend\SEO())
                 ->addExtender('linkrobins-wiki-article', Seo\ArticleSeoPage::class),
+        ]),
+
+    // Articles and the wiki index in fof/sitemap's sitemap, for forums that
+    // run it. Conditional for the same reason as the fof/seo block above.
+    (new Extend\Conditional())
+        ->whenExtensionEnabled('fof-sitemap', fn () => [
+            (new \FoF\Sitemap\Extend\Sitemap())
+                ->addResource(Sitemap\ArticleSitemapResource::class)
+                ->addStaticUrl('linkrobins-wiki.index'),
         ]),
 
     (new Extend\Frontend('admin'))
