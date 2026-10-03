@@ -56,6 +56,14 @@ class ArticlePage
 
         $document->title = $title;
         $document->canonicalUrl = $canonical;
+
+        // The forum app reads this instead of requesting the article again
+        // (WikiShowPage::_preloadedOrFetch). Besides saving a round trip, it
+        // keeps the page working for a crawler that cannot reach the API:
+        // Googlebot obeys robots.txt for the requests a page makes, and SEO
+        // extensions such as fof/sitemap disallow /api. Core does the same for
+        // discussions, which is why those rendered while articles did not.
+        $document->payload['apiDocument'] = $apiDocument;
         $document->content = $this->renderContent($title, (string) ($attributes->contentHtml ?? ''), $attributes->faq ?? []);
 
         if ($description !== '') {

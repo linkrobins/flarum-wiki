@@ -65,6 +65,13 @@ class ServerRenderedPagesTest extends TestCase
         $fallback = substr($html, (int) strpos($html, '<noscript id="flarum-content">'));
         $this->assertStringContainsString('Unpack the widget into the plugins folder.', $fallback);
         $this->assertStringContainsString('<h1>Installing the widget</h1>', $fallback);
+
+        // The app reads the article from the payload instead of the API, so a
+        // crawler barred from /api by robots.txt still gets the page.
+        preg_match('#<script id="flarum-json-payload" type="application/json">(.*?)</script>#s', $html, $m);
+        $payload = json_decode($m[1] ?? '{}', true);
+        $this->assertEquals('linkrobins-wiki-articles', $payload['apiDocument']['data']['type'] ?? null);
+        $this->assertEquals('1', $payload['apiDocument']['data']['id'] ?? null);
     }
 
     #[Test]
