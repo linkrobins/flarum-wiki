@@ -27,12 +27,14 @@
     "require-dev": {
         "flarum/testing": "^2.0",
         "flarum/phpstan": "^2.0",
-        "flarum/audit": "^2.0"
+        "flarum/audit": "^2.0",
+        "fof/seo": "^4.0@beta"
     },
     "minimum-stability": "beta",
     "prefer-stable": true,
     "suggest": {
-        "fof/upload": "For file attachments. The wiki extension automatically renders an 'Attach files' button when this is installed."
+        "fof/upload": "For file attachments. The wiki extension automatically renders an 'Attach files' button when this is installed.",
+        "fof/seo": "Adds article metadata through its page driver: schema.org Article data, social tags and its robots handling."
     },
     "autoload": {
         "psr-4": {

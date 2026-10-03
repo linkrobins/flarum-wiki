@@ -4,6 +4,8 @@ use Flarum\Extend;
 use Flarum\Search\Database\DatabaseSearchDriver;
 use LinkRobins\Wiki\Access;
 use LinkRobins\Wiki\Api\Resource\WikiArticleResource;
+use LinkRobins\Wiki\Content;
+use LinkRobins\Wiki\Seo;
 use LinkRobins\Wiki\Api\Resource\WikiCategoryResource;
 use LinkRobins\Wiki\Api\Resource\WikiCommentResource;
 use LinkRobins\Wiki\Api\Resource\WikiReportResource;
@@ -25,10 +27,20 @@ return [
     (new Extend\Frontend('forum'))
         ->js(__DIR__ . '/js/dist/forum.js')
         ->css(__DIR__ . '/less/forum.less')
-        ->route('/wiki',           'linkrobins-wiki.index')
+        ->route('/wiki',           'linkrobins-wiki.index', Content\IndexPage::class)
         ->route('/wiki/new',       'linkrobins-wiki.compose')
-        ->route('/wiki/{id}',      'linkrobins-wiki.show')
-        ->route('/wiki/{id}/edit', 'linkrobins-wiki.edit'),
+        ->route('/wiki/{id}',      'linkrobins-wiki.show', Content\ArticlePage::class)
+        ->route('/wiki/{id}/edit', 'linkrobins-wiki.edit')
+        // Last, so it overrides any SEO extension's blanket "index, follow".
+        ->content(Content\NoIndexEditorPages::class, -100),
+
+    // Article meta for forums running fof/seo. Conditional so the driver class
+    // (which implements fof/seo's interface) is never loaded without it.
+    (new Extend\Conditional())
+        ->whenExtensionEnabled('fof-seo', fn () => [
+            (new \FoF\Seo\Extend\SEO())
+                ->addExtender('linkrobins-wiki-article', Seo\ArticleSeoPage::class),
+        ]),
 
     (new Extend\Frontend('admin'))
         ->js(__DIR__ . '/js/dist/admin.js')
