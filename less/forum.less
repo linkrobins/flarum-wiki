@@ -952,22 +952,26 @@
     }
 }
 
-// Wiki search box on the index, and article hits in the forum's search
-// dropdown.
-.LinkRobinsWiki-search {
-    display: flex;
-    gap: 8px;
+// Index header: the page title on the left, the search box on the right;
+// the search drops under the title on a phone. Mirrors the support ticket
+// list (.LinkRobinsSupport-indexHeader / -search) rule for rule, so the two
+// extensions look identical; change both together.
+.LinkRobinsWiki-indexHeader {
+    flex-wrap: wrap;
     align-items: center;
-    margin-bottom: 16px;
+    justify-content: space-between;
+    gap: 12px;
 
-    &-input {
-        flex: 1 1 auto;
-        min-width: 0;
+    // On the custom homepage layout there is no title, so the box keeps to
+    // the right on its own.
+    &--searchOnly {
+        justify-content: flex-end;
     }
 
-    // The button is full width in the sidebar, which is right there and wrong
-    // beside a search field, so it is sized to its own content here. On a phone
-    // core lifts the wrapper into the header and none of this applies.
+    // In full-width mode the New article button sits after the search box.
+    // It is full width in the sidebar, which is wrong here, so it is sized to
+    // its own content. On a phone core lifts the wrapper into the app header
+    // and none of this applies.
     .LinkRobinsWiki-newArticleControl {
         flex: 0 0 auto;
 
@@ -975,12 +979,30 @@
             width: auto;
         }
     }
-
-    &-go, &-clear {
-        flex: 0 0 auto;
+}
+.LinkRobinsWiki-search {
+    position: relative;
+    flex: 0 1 280px;
+    min-width: 200px;
+}
+.LinkRobinsWiki-search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted-color, #888);
+    pointer-events: none;
+}
+.LinkRobinsWiki-search-input {
+    padding-left: 34px;
+}
+@media (max-width: 767px) {
+    .LinkRobinsWiki-search {
+        flex: 1 1 100%;
     }
 }
 
+// Article hits in the forum's search dropdown.
 .LinkRobinsWiki-searchResult {
     > a {
         display: flex;

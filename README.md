@@ -8,6 +8,7 @@ A wiki / knowledge-base extension for Flarum 2. Members write public articles wi
 - **Markdown content.** Article bodies run through Flarum's formatter, so Markdown/BBCode and format extensions (mentions, emoji) work the same as in discussions. The rendered HTML is produced on demand at serialize time, so format extensions apply retroactively to older articles.
 - **Moderation.** Editors can soft-delete and restore articles; soft-deleted articles stay visible to editors (with a "deleted" treatment) and hidden from everyone else. Permanent deletion is admin-only and requires the article to be soft-deleted first, then cascades to its revisions.
 - **File attachments.** Optional integration with `fof/upload`.
+- **Search.** A search box beside the wiki's title finds articles by title or text as you type, title matches first. A link with `?q=` opens straight to a search.
 
 ## Search engines and sitemaps
 
