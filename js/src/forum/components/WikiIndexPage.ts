@@ -532,6 +532,17 @@ export default class WikiIndexPage extends Page {
       groups[seen[key]].items.push(a);
     });
 
+    // Groups were created in the order categories first turn up in the list,
+    // which is newest first. Order them the way the admin set them instead
+    // (position, then id, as the categories endpoint sorts), uncategorised
+    // last. Articles inside each group keep their order.
+    const rank = (cat: any) => [cat ? Number(cat.position()) || 0 : Infinity, cat ? Number(cat.id()) : Infinity];
+    groups.sort((a, b) => {
+      const [pa, ia] = rank(a.cat);
+      const [pb, ib] = rank(b.cat);
+      return pa !== pb ? pa - pb : ia - ib;
+    });
+
     // One group is not a grouping: an uncategorised wiki gets the plain
     // listing rather than a lone heading sitting over everything it owns.
     if (groups.length < 2) {
