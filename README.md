@@ -52,7 +52,7 @@ Then enable the extension in admin → Extensions.
 
 - `lr-wiki.createArticle`: start new articles.
 - `lr-wiki.editArticles`: edit and moderate (soft-delete / restore) any article and any comment, not just one's own, and see every draft.
-- `lr-wiki.comment`: comment on articles. Not granted to any group out of the box, so only admins can comment until you grant it.
+- `lr-wiki.comment`: comment on articles. Granted to members out of the box.
 - `lr-wiki.viewHistory`: view an article's revision history. Granted to guests out of the box, which means everyone; remove it there and grant it to specific groups to restrict history.
 - `lr-wiki.reportArticle`: report an article. Granted to members out of the box; guests can never report.
 

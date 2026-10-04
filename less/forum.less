@@ -268,6 +268,18 @@
     }
 }
 
+// Core gives .Post-body `overflow: auto`. A few pixels of padded inline code
+// poking past the end of a long article then make the whole body scrollable
+// and draw a stray scrollbar beside it. Wide content scrolls on its own
+// (`pre` blocks, and tables below), so the body never needs to; flow-root
+// keeps floated images contained the way the overflow did.
+.LinkRobinsWiki-articleBody,
+.LinkRobinsWiki-faq-answer,
+.LinkRobinsWiki-comment-body {
+    overflow: visible;
+    display: flow-root;
+}
+
 .LinkRobinsWiki-articleBody {
     line-height: 1.6;
     word-wrap: break-word;
