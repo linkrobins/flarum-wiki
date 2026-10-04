@@ -60,6 +60,9 @@ return [
 
     (new Extend\Settings())
         ->default('linkrobins-wiki.index_layout', '')
+        // How many articles each category shows on the default wiki home page
+        // before its "See all" link.
+        ->default('linkrobins-wiki.home_per_category', 5)
         // Table of contents: on by default, only shown once an article has at
         // least this many headings so short articles don't get a stub rail.
         ->default('linkrobins-wiki.toc_enabled', true)
@@ -73,6 +76,7 @@ return [
         ->default('linkrobins-wiki.nav_position', 'sections')
         ->default('linkrobins-wiki.full_width', false)
         ->serializeToForum('linkrobinsWikiIndexLayout', 'linkrobins-wiki.index_layout')
+        ->serializeToForum('linkrobinsWikiHomePerCategory', 'linkrobins-wiki.home_per_category', fn ($value) => Content\IndexPage::perCategory($value))
         ->serializeToForum(
             'linkrobinsWikiNavPosition',
             'linkrobins-wiki.nav_position',

@@ -15,7 +15,8 @@ A wiki / knowledge-base extension for Flarum 2. Members write public articles wi
 - **Reports.** Members can report an article as inaccurate, out of date, off topic, a duplicate, or something else, with an optional note. Reports collect on the extension's admin page, where they can be resolved; resolved reports are kept as history.
 - **Markdown content.** Article bodies run through Flarum's formatter, so Markdown/BBCode and format extensions (mentions, emoji) work the same as in discussions. The rendered HTML is produced on demand at serialize time, so format extensions apply retroactively to older articles.
 - **Moderation.** Editors can soft-delete and restore articles; soft-deleted articles stay visible to editors (with a "deleted" treatment) and hidden from everyone else. Permanent deletion is admin-only and requires the article to be soft-deleted first, then cascades to its revisions.
-- **Customizable home page.** Build the `/wiki` landing page from shortcodes (article lists, single articles, the category list, headings, links), or leave it blank to list every article.
+- **Home page by category.** `/wiki` lists every category in the order you set, each with its first few articles (positioned ones first) and a "See all" link when it has more, so no category drops off the page however large the wiki grows. Articles with no category come last, under "Other". How many each category shows is a setting.
+- **Customizable home page.** Or build the `/wiki` landing page yourself from shortcodes (article lists, single articles, the category list, headings, links).
 - **Layout options.** Choose where the Wiki link sits in the forum sidebar (or hide it), and optionally let wiki pages use the full page width.
 - **File attachments.** Optional integration with `fof/upload`.
 - **Search.** A search box beside the wiki's title finds articles by title or text as you type, title matches first. A link with `?q=` opens straight to a search. Articles also appear in the forum's own search dropdown, alongside discussions and users.
@@ -60,7 +61,8 @@ Authors can always edit their own articles. Admins bypass every check. Permanent
 
 ## Forum UI
 
-- `/wiki`: the wiki home page (every article, or the layout set in admin), with a category filter in the sidebar.
+- `/wiki`: the wiki home page (every category with its first articles, or the layout set in admin), with a category filter in the sidebar.
+- `/wiki?category=:id`: every article in one category, with "Load more" at the end. `?category=none` lists the articles with no category.
 - `/wiki/new`: write a new article (title, address, position, category, body, FAQ, draft).
 - `/wiki/:slug`: the article page, with the rendered body, contents panel, FAQ, related articles, comments, edit/moderation controls, and the revision history. The article's id works here as well.
 - `/wiki/:slug/edit`: edit an existing article.
@@ -69,7 +71,7 @@ Authors can always edit their own articles. Admins bypass every check. Permanent
 
 Settings live at admin → Extensions → LR Wiki:
 
-- **Wiki home page:** the shortcode layout for `/wiki`.
+- **Wiki home page:** the shortcode layout for `/wiki`, and how many articles each category shows when there is no layout.
 - **Layout:** the Wiki link's place in the sidebar, and full-width pages.
 - **Table of contents:** on or off, and the minimum number of headings.
 - **Related articles:** on or off, and how many to show.

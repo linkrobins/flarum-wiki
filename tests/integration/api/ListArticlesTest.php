@@ -189,4 +189,30 @@ class ListArticlesTest extends TestCase
         $this->assertSame([], $this->searchTitles('_'));
         $this->assertSame([], $this->searchTitles('!'));
     }
+
+    #[Test]
+    public function the_none_category_filter_lists_only_uncategorised_articles(): void
+    {
+        $this->app();
+        $now = Carbon::now();
+        $this->database()->table('linkrobins_wiki_categories')->insert([
+            'id' => 1, 'name' => 'Guides', 'slug' => 'guides', 'position' => 0, 'created_at' => $now, 'updated_at' => $now,
+        ]);
+        $this->database()->table('linkrobins_wiki_articles')->insert([
+            'id' => 6, 'user_id' => 2, 'category_id' => 1, 'title' => 'Filed article', 'content' => '<t><p>Body.</p></t>',
+            'last_edited_at' => $now, 'created_at' => $now, 'updated_at' => $now,
+        ]);
+
+        // The home page's "Other" group and its "See all" page.
+        $none = $this->send(
+            $this->request('GET', '/api/linkrobins-wiki-articles')->withQueryParams(['filter' => ['categoryId' => 'none']])
+        );
+        $this->assertEquals(200, $none->getStatusCode());
+        $this->assertEquals([1, 3, 4], $this->listedIds($none->getBody()->getContents()));
+
+        $guides = $this->send(
+            $this->request('GET', '/api/linkrobins-wiki-articles')->withQueryParams(['filter' => ['categoryId' => '1']])
+        );
+        $this->assertEquals([6], $this->listedIds($guides->getBody()->getContents()));
+    }
 }

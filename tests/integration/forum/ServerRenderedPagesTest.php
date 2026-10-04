@@ -139,6 +139,54 @@ class ServerRenderedPagesTest extends TestCase
     }
 
     #[Test]
+    public function grouped_home_preloads_every_categorys_first_articles(): void
+    {
+        $this->setting('linkrobins-wiki.home_per_category', '2');
+        $this->app();
+
+        $old = Carbon::now()->subYear();
+        $new = Carbon::now();
+        $db = $this->database();
+        $db->table('linkrobins_wiki_categories')->insert([
+            ['id' => 1, 'name' => 'Getting started', 'slug' => 'getting-started', 'position' => 0, 'created_at' => $old, 'updated_at' => $old],
+            ['id' => 2, 'name' => 'The launcher', 'slug' => 'the-launcher', 'position' => 1, 'created_at' => $old, 'updated_at' => $old],
+        ]);
+        // The primer was written long ago and never touched; the launcher's
+        // articles are all newer. The primer must still be on the home page.
+        $db->table('linkrobins_wiki_articles')->insert([
+            ['id' => 10, 'user_id' => 2, 'category_id' => 1, 'title' => 'Primer', 'slug' => 'primer', 'content' => '<t><p>Start here.</p></t>', 'last_edited_at' => $old, 'created_at' => $old, 'updated_at' => $old],
+            ['id' => 11, 'user_id' => 2, 'category_id' => 2, 'title' => 'Launcher one', 'slug' => 'launcher-one', 'content' => '<t><p>One.</p></t>', 'last_edited_at' => $new, 'created_at' => $new, 'updated_at' => $new],
+            ['id' => 12, 'user_id' => 2, 'category_id' => 2, 'title' => 'Launcher two', 'slug' => 'launcher-two', 'content' => '<t><p>Two.</p></t>', 'last_edited_at' => $new, 'created_at' => $new, 'updated_at' => $new],
+            ['id' => 13, 'user_id' => 2, 'category_id' => 2, 'title' => 'Launcher three', 'slug' => 'launcher-three', 'content' => '<t><p>Three.</p></t>', 'last_edited_at' => $new, 'created_at' => $new, 'updated_at' => $new],
+            ['id' => 14, 'user_id' => 2, 'category_id' => 2, 'title' => 'Launcher four', 'slug' => 'launcher-four', 'content' => '<t><p>Four.</p></t>', 'last_edited_at' => $new, 'created_at' => $new, 'updated_at' => $new],
+        ]);
+
+        [$status, $html] = $this->page('/wiki');
+        $this->assertEquals(200, $status);
+
+        preg_match('#<script id="flarum-json-payload" type="application/json">(.*?)</script>#s', $html, $m);
+        $document = json_decode($m[1] ?? '{}', true)['apiDocument'] ?? [];
+
+        $this->assertEquals(2, $document['meta']['linkrobinsWikiHome']['perCategory'] ?? null);
+
+        $byGroup = [];
+        foreach ($document['data'] ?? [] as $article) {
+            $byGroup[$article['relationships']['category']['data']['id'] ?? 'none'][] = (int) $article['id'];
+        }
+
+        // Every group, each with one more than it shows (so the page knows
+        // there is a "See all"), and only what a guest may see: the deleted
+        // article and the draft from setUp stay out of "Other".
+        $this->assertSame([10], $byGroup['1'] ?? null);
+        $this->assertCount(3, $byGroup['2'] ?? []);
+        $this->assertSame([1], $byGroup['none'] ?? null);
+
+        // Crawlers still get the plain list of every article.
+        $this->assertStringContainsString('Primer', $html);
+        $this->assertStringContainsString('Launcher four', $html);
+    }
+
+    #[Test]
     public function later_index_pages_are_not_preloaded(): void
     {
         // The test request does not parse a query string out of the path, so
