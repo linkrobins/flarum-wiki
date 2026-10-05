@@ -22,11 +22,40 @@ import { canCreateWikiArticle } from '../utils/permissions';
 import { loadArticles, loadArticle, loadCategories, QUIET } from '../utils/api';
 import { parseIndexLayout, WikiBlock } from '../utils/indexLayout';
 
+/** One category's section of the default home page. */
+type WikiGroup = { key: string; cat: any; items: any[]; more: boolean };
+
+/** The uncategorised group's key, as the categoryId filter and URL take it. */
+const NO_CATEGORY = 'none';
+
+/** How many articles each category shows on the home page (admin setting). */
+function perCategory(): number {
+  return Math.max(1, Math.min(50, parseInt(readForumAttribute('linkrobinsWikiHomePerCategory'), 10) || 5));
+}
+
+/** Home page groups in the order the admin set: position, then id, uncategorised last. */
+function compareGroups(a: WikiGroup, b: WikiGroup): number {
+  const rank = (cat: any) => [cat ? Number(cat.position()) || 0 : Infinity, cat ? Number(cat.id()) : Infinity];
+  const [pa, ia] = rank(a.cat);
+  const [pb, ib] = rank(b.cat);
+  if (pa !== pb) return pa < pb ? -1 : 1;
+  return ia === ib ? 0 : ia < ib ? -1 : 1;
+}
+
 export default class WikiIndexPage extends Page {
   loading = true;
   error: any = null;
   articles: any[] = [];
   category: string | null = null;
+
+  // The plain list's paging (a category, a search, or a home page with
+  // fewer than two groups): more is fetched from the end of what is shown.
+  hasMore = false;
+  loadingMore = false;
+
+  // The default home page: one section per category, or null when the home
+  // page is the plain list instead.
+  groups: WikiGroup[] | null = null;
 
   // Search state. `query` is what the list is loaded with; `queryDraft` is
   // what is in the box. Typing applies the draft after a short pause, the
@@ -76,6 +105,9 @@ export default class WikiIndexPage extends Page {
     this.category = m.route.param('category') || null;
     this.error = null;
     this.blockData = {};
+    this.groups = null;
+    this.hasMore = false;
+    this.loadingMore = false;
 
     // A search always shows results, whatever the custom layout says, for the
     // same reason a category filter does.
@@ -109,15 +141,119 @@ export default class WikiIndexPage extends Page {
       return;
     }
 
-    // No custom layout -> default list of all articles.
+    // No custom layout -> the default home page, grouped by category.
     this.blocks = [];
-    this._loadList();
+    this._loadHome();
   }
 
-  _loadList() {
+  /**
+   * The default home page: every category that has articles, in the order
+   * the admin set, each with its first few articles and a "See all" link
+   * when it has more. Built from the categories rather than from the newest
+   * articles, so a category never drops off the page because nobody edited
+   * it lately, however large the wiki gets.
+   *
+   * The server preloads it (Content\IndexPage) so the page works where /api
+   * is blocked for crawlers. With fewer than two groups there is nothing to
+   * group, and the page is the plain, pageable list instead.
+   */
+  _loadHome() {
+    const preloaded: any = this._preloadedList();
+    const home = preloaded && preloaded.payload && preloaded.payload.meta && preloaded.payload.meta.linkrobinsWikiHome;
+
+    if (home) {
+      this._setGroups(this._groupsFrom(preloaded, Number(home.perCategory) || perCategory()));
+      return;
+    }
+
+    if (preloaded) {
+      // The server found fewer than two groups and sent the list's first page.
+      this._showList(preloaded);
+      return;
+    }
+
     this.loading = true;
     m.redraw();
-    const params: any = { page: { limit: 25 }, filter: {} };
+
+    const limit = perCategory();
+
+    loadCategories(QUIET)
+      .then((cats: any[]) => {
+        this.categories = cats || [];
+        const keys = this.categories.map((c: any) => String(c.id())).concat(NO_CATEGORY);
+
+        return Promise.all(
+          keys.map((key) => loadArticles({ filter: { categoryId: key }, sort: 'position,-lastEditedAt', page: { limit: limit + 1 } }, QUIET))
+        );
+      })
+      .then((lists: any[][]) => {
+        const groups = this._groupsFrom(([] as any[]).concat(...lists.map((list) => list || [])), limit);
+
+        if (groups.length < 2) {
+          this._loadList();
+          return;
+        }
+
+        this._setGroups(groups);
+      })
+      .catch((err: any) => {
+        this.error = err;
+        this.loading = false;
+        console.error('[linkrobins/wiki] index load failed:', err);
+        m.redraw();
+      });
+  }
+
+  /** Split a run of articles into home page groups, keeping each group's order. */
+  _groupsFrom(articles: any[], limit: number): WikiGroup[] {
+    const groups: WikiGroup[] = [];
+    const seen: Record<string, WikiGroup> = {};
+
+    (articles || []).forEach((a: any) => {
+      const cat = a.category && a.category();
+      const key = cat ? String(cat.id()) : NO_CATEGORY;
+
+      if (!seen[key]) {
+        seen[key] = { key, cat, items: [], more: false };
+        groups.push(seen[key]);
+      }
+
+      seen[key].items.push(a);
+    });
+
+    // Each group was fetched with one more than it shows: that one only
+    // says there is more.
+    groups.forEach((g) => {
+      g.more = g.items.length > limit;
+      g.items = g.items.slice(0, limit);
+    });
+
+    return groups.sort(compareGroups);
+  }
+
+  _setGroups(groups: WikiGroup[]) {
+    if (groups.length < 2) {
+      // One group is not a grouping: show the plain list, which pages.
+      this._loadList();
+      return;
+    }
+
+    this.groups = groups;
+    this.loading = false;
+    m.redraw();
+  }
+
+  /** Show a page of the plain list, and whether there is more after it. */
+  _showList(articles: any) {
+    this.articles = articles || [];
+    this.hasMore = !!(articles && articles.payload && articles.payload.links && articles.payload.links.next);
+    this.loading = false;
+    m.redraw();
+  }
+
+  /** The plain list's query: a category, a search, or every article. */
+  _listParams(offset = 0): any {
+    const params: any = { page: { limit: 25, offset }, filter: {} };
     if (this.category) {
       params.filter.categoryId = this.category;
       // A category is the unit people arrange by hand, so its listing leads
@@ -130,20 +266,43 @@ export default class WikiIndexPage extends Page {
       // ordering before the sort is applied, so title matches lead and recency
       // breaks ties.
     }
+    return params;
+  }
+
+  _loadList() {
+    this.loading = true;
+    m.redraw();
+    const params = this._listParams();
     // The plain index (no category, no search) was preloaded by the server.
     const first = !this.category && !this.query.trim() ? this._preloadedList() : null;
     // Quiet: the page shows its own "could not load" state, so an alert on
     // top only repeats it (and is all a crawler blocked from /api would see).
     (first ? Promise.resolve(first) : loadArticles(params, QUIET))
-      .then((articles: any[]) => {
-        this.articles = articles || [];
-        this.loading = false;
-        m.redraw();
-      })
+      .then((articles: any) => this._showList(articles))
       .catch((err: any) => {
         this.error = err;
         this.loading = false;
         console.error('[linkrobins/wiki] index load failed:', err);
+        m.redraw();
+      });
+  }
+
+  _loadMore() {
+    if (this.loadingMore) return;
+    this.loadingMore = true;
+    m.redraw();
+
+    loadArticles(this._listParams(this.articles.length))
+      .then((more: any) => {
+        // Skip anything already shown, in case the list shifted between pages.
+        const seen = new Set(this.articles.map((a: any) => String(a.id())));
+        this.articles = this.articles.concat((more || []).filter((a: any) => !seen.has(String(a.id()))));
+        this.hasMore = !!(more && more.payload && more.payload.links && more.payload.links.next);
+        this.loadingMore = false;
+        m.redraw();
+      })
+      .catch(() => {
+        this.loadingMore = false;
         m.redraw();
       });
   }
@@ -247,9 +406,11 @@ export default class WikiIndexPage extends Page {
       ];
     }
 
-    // A plain listing when the reader has already narrowed things themselves
-    // (a search or a category); grouped when this is the index of everything.
-    const body = this.category || this.query.trim() ? this._renderList(this.articles) : this._renderGrouped(this.articles);
+    // Grouped when this is the home page of everything; a plain, pageable
+    // list when the reader has narrowed things themselves (a search or a
+    // category), or when there is nothing to group.
+    const body =
+      this.groups && !this.loading && !this.error ? this._renderGrouped(this.groups) : [this._renderList(this.articles), this._renderLoadMore()];
 
     return [this._renderHeader(), body];
   }
@@ -283,20 +444,51 @@ export default class WikiIndexPage extends Page {
   }
 
   _renderHeader() {
-    const cat = this.category ? this.categories.find((c: any) => String(c.id()) === String(this.category)) : null;
+    const cat = this._currentCategory();
     const title = this.query.trim()
       ? m('h1', { className: 'LinkRobinsWiki-title' }, [
           m('i', { className: 'fas fa-search' }),
           ' ',
           tr('search.results_heading', 'Results for "{query}"', { query: this.query.trim() }),
         ])
-      : m('h1', { className: 'LinkRobinsWiki-title' }, [m('i', { className: 'fas fa-book' }), ' ', cat ? cat.name() : tr('nav', 'Wiki')]);
+      : m('h1', { className: 'LinkRobinsWiki-title' }, [
+          m('i', { className: 'fas fa-book' }),
+          ' ',
+          cat ? cat.name() : this.category === NO_CATEGORY ? tr('index.uncategorised', 'Other') : tr('nav', 'Wiki'),
+        ]);
 
     return m('header', { className: 'LinkRobinsWiki-header LinkRobinsWiki-indexHeader' }, [
       title,
       this._renderSearch(),
       this._renderNewArticleButton(),
     ]);
+  }
+
+  /**
+   * The category the list is narrowed to, from those loaded here or, on a
+   * category page reached straight from a link, the sidebar's copy.
+   */
+  _currentCategory(): any {
+    if (!this.category || this.category === NO_CATEGORY) return null;
+    const id = String(this.category);
+    return (
+      this.categories.find((c: any) => String(c.id()) === id) ||
+      app.store.all('linkrobins-wiki-categories').find((c: any) => String(c.id()) === id || (c.slug && c.slug() === id)) ||
+      null
+    );
+  }
+
+  /** Core's "Load more" button under a plain list, as the discussion list has it. */
+  _renderLoadMore() {
+    if (this.loading || this.error || !(this.hasMore || this.loadingMore)) return null;
+
+    return m(
+      'div',
+      { className: 'DiscussionList-loadMore LinkRobinsWiki-loadMore' },
+      this.loadingMore
+        ? m(LoadingIndicator)
+        : m(Button, { className: 'Button', onclick: () => this._loadMore() }, app.translator.trans('core.forum.discussion_list.load_more_button'))
+    );
   }
 
   /**
@@ -477,7 +669,7 @@ export default class WikiIndexPage extends Page {
 
   // --- Shared list / row ------------------------------------------------
 
-  _renderList(articles: any[], opts: { hideCategory?: boolean } = {}) {
+  _renderList(articles: any[], opts: { hideCategory?: boolean; tail?: any } = {}) {
     if (this.loading) {
       return m(LoadingIndicator);
     }
@@ -498,58 +690,59 @@ export default class WikiIndexPage extends Page {
           : tr('index.empty', 'No articles to show.')
       );
     }
-    return m(
-      'div',
-      { className: 'LinkRobinsWiki-list' },
-      articles.map((a: any) => this._renderRow(a, opts))
-    );
+    return m('div', { className: 'LinkRobinsWiki-list' }, articles.map((a: any) => this._renderRow(a, opts)).concat(opts.tail ? [opts.tail] : []));
   }
 
   /**
-   * The default index, grouped under one heading per category.
+   * The default home page, one section per category.
    *
    * A flat listing repeats the category on every card, which on a wiki is the
    * one thing a run of articles already has in common. The heading says it
    * once and the cards get the room back for what each article is about.
    */
-  _renderGrouped(articles: any[]) {
-    if (this.loading || this.error || !articles || !articles.length) {
-      return this._renderList(articles);
-    }
+  _renderGrouped(groups: WikiGroup[]) {
+    return groups.map((g) => {
+      const href = basePath() + BASE_PATH + '?category=' + encodeURIComponent(g.key);
+      const name = g.cat ? g.cat.name() : tr('index.uncategorised', 'Other');
 
-    const groups: { key: string; cat: any; items: any[] }[] = [];
-    const seen: Record<string, number> = {};
-
-    articles.forEach((a: any) => {
-      const cat = a.category && a.category();
-      const key = cat ? 'c' + cat.id() : 'none';
-
-      if (seen[key] === undefined) {
-        seen[key] = groups.length;
-        groups.push({ key, cat, items: [] });
-      }
-
-      groups[seen[key]].items.push(a);
-    });
-
-    // One group is not a grouping: an uncategorised wiki gets the plain
-    // listing rather than a lone heading sitting over everything it owns.
-    if (groups.length < 2) {
-      return this._renderList(articles);
-    }
-
-    return groups.map((g) =>
-      m('section', { className: 'LinkRobinsWiki-group', key: 'group-' + g.key }, [
+      return m('section', { className: 'LinkRobinsWiki-group', key: 'group-' + g.key }, [
         m(
           'h2',
           {
             className: 'LinkRobinsWiki-group-title',
             style: g.cat && g.cat.color() ? 'color: ' + g.cat.color() : undefined,
           },
-          g.cat ? g.cat.name() : tr('index.uncategorised', 'Other')
+          name
         ),
-        this._renderList(g.items, { hideCategory: true }),
-      ])
+        this._renderList(g.items, { hideCategory: true, tail: g.more ? this._renderSeeAll(href, name, g.cat) : null }),
+      ]);
+    });
+  }
+
+  /**
+   * The "See all" tile that closes a group that has more: the last card in
+   * its grid, so it fills the gap beside an odd last card instead of sitting
+   * under the grid as a line of small text. Takes the category's color.
+   */
+  _renderSeeAll(href: string, name: any, cat: any) {
+    const color = cat && cat.color() ? cat.color() : null;
+
+    return m(
+      'a',
+      {
+        href,
+        className: 'LinkRobinsWiki-seeAll',
+        key: 'see-all',
+        style: color ? '--lr-wiki-accent: ' + color : undefined,
+        onclick: (e: any) => safeNavigate(href, e),
+      },
+      [
+        m('span', { className: 'LinkRobinsWiki-seeAll-label' }, [
+          m('span', { className: 'LinkRobinsWiki-seeAll-lead' }, tr('index.see_all_lead', 'See all in')),
+          m('span', { className: 'LinkRobinsWiki-seeAll-name' }, name),
+        ]),
+        m('span', { className: 'LinkRobinsWiki-seeAll-icon', 'aria-hidden': 'true' }, m('i', { className: 'fas fa-arrow-right' })),
+      ]
     );
   }
 

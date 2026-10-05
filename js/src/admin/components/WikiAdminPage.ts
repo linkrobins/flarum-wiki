@@ -77,6 +77,15 @@ export default class WikiAdminPage extends ExtensionPage {
         placeholder: '[articles limit="5" title="Recent"]\n[categories]',
       }),
 
+      this.buildSettingComponent({
+        type: 'number',
+        setting: 'linkrobins-wiki.home_per_category',
+        label: t('linkrobins-wiki.admin.index_layout.per_category_label'),
+        help: t('linkrobins-wiki.admin.index_layout.per_category_help'),
+        min: 1,
+        max: 50,
+      }),
+
       m('div', { className: 'LinkRobinsWikiAdmin-shortcodes' }, [
         m('h4', t('linkrobins-wiki.admin.index_layout.shortcodes_heading')),
         m('ul', [
