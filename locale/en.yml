@@ -114,7 +114,7 @@ linkrobins-wiki:
       deleted_badge: 'Deleted'
       draft_badge: Draft
       uncategorised: Other
-      see_all: 'See all in {name}'
+      see_all_lead: 'See all in'
       no_categories: 'No categories yet.'
     compose:
       title: 'New article'

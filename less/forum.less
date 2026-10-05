@@ -73,18 +73,63 @@
     font-weight: 600;
     margin: 0 0 12px;
 }
-// The group's "See all in …" link, under its cards.
-.LinkRobinsWiki-group-more {
+// The "See all" tile: the last card of a group that has more. Dashed, in
+// the category's color (the primary color when it has none), so it reads as
+// a way onward rather than one more article.
+.LinkRobinsWiki-seeAll {
+    --lr-wiki-accent-fallback: var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 18px;
+    min-height: 72px;
+    border: 1.5px dashed var(--lr-wiki-accent, var(--lr-wiki-accent-fallback));
+    border-radius: 8px;
+    color: var(--lr-wiki-accent, var(--lr-wiki-accent-fallback));
+    text-decoration: none;
+    transition: background 0.15s;
+
+    &:hover,
+    &:focus-visible {
+        border-style: solid;
+        background: color-mix(in srgb, var(--lr-wiki-accent, var(--lr-wiki-accent-fallback)) 8%, transparent);
+        text-decoration: none;
+
+        .LinkRobinsWiki-seeAll-icon {
+            transform: translateX(3px);
+            background: var(--lr-wiki-accent, var(--lr-wiki-accent-fallback));
+            color: var(--body-bg, #fff);
+        }
+    }
+}
+.LinkRobinsWiki-seeAll-label {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.LinkRobinsWiki-seeAll-lead {
+    font-size: calc(0.85em * var(--lr-text-scale, 1));
+    color: var(--muted-color);
+}
+.LinkRobinsWiki-seeAll-name {
+    font-size: calc(1.05em * var(--lr-text-scale, 1));
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.LinkRobinsWiki-seeAll-icon {
+    flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    margin-top: 10px;
-    font-size: calc(0.9em * var(--lr-text-scale, 1));
-    font-weight: 600;
-
-    .fa-arrow-right {
-        font-size: 0.85em;
-    }
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1.5px solid currentColor;
+    transition: transform 0.15s, background 0.15s, color 0.15s;
 }
 
 // Each row is its own card now that they sit side by side: a shared outer

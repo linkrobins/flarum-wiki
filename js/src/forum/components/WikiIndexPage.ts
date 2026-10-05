@@ -669,7 +669,7 @@ export default class WikiIndexPage extends Page {
 
   // --- Shared list / row ------------------------------------------------
 
-  _renderList(articles: any[], opts: { hideCategory?: boolean } = {}) {
+  _renderList(articles: any[], opts: { hideCategory?: boolean; tail?: any } = {}) {
     if (this.loading) {
       return m(LoadingIndicator);
     }
@@ -690,11 +690,7 @@ export default class WikiIndexPage extends Page {
           : tr('index.empty', 'No articles to show.')
       );
     }
-    return m(
-      'div',
-      { className: 'LinkRobinsWiki-list' },
-      articles.map((a: any) => this._renderRow(a, opts))
-    );
+    return m('div', { className: 'LinkRobinsWiki-list' }, articles.map((a: any) => this._renderRow(a, opts)).concat(opts.tail ? [opts.tail] : []));
   }
 
   /**
@@ -718,16 +714,36 @@ export default class WikiIndexPage extends Page {
           },
           name
         ),
-        this._renderList(g.items, { hideCategory: true }),
-        g.more
-          ? m('a', { className: 'LinkRobinsWiki-group-more', href, onclick: (e: any) => safeNavigate(href, e) }, [
-              tr('index.see_all', 'See all in {name}', { name }),
-              ' ',
-              m('i', { className: 'fas fa-arrow-right', 'aria-hidden': 'true' }),
-            ])
-          : null,
+        this._renderList(g.items, { hideCategory: true, tail: g.more ? this._renderSeeAll(href, name, g.cat) : null }),
       ]);
     });
+  }
+
+  /**
+   * The "See all" tile that closes a group that has more: the last card in
+   * its grid, so it fills the gap beside an odd last card instead of sitting
+   * under the grid as a line of small text. Takes the category's color.
+   */
+  _renderSeeAll(href: string, name: any, cat: any) {
+    const color = cat && cat.color() ? cat.color() : null;
+
+    return m(
+      'a',
+      {
+        href,
+        className: 'LinkRobinsWiki-seeAll',
+        key: 'see-all',
+        style: color ? '--lr-wiki-accent: ' + color : undefined,
+        onclick: (e: any) => safeNavigate(href, e),
+      },
+      [
+        m('span', { className: 'LinkRobinsWiki-seeAll-label' }, [
+          m('span', { className: 'LinkRobinsWiki-seeAll-lead' }, tr('index.see_all_lead', 'See all in')),
+          m('span', { className: 'LinkRobinsWiki-seeAll-name' }, name),
+        ]),
+        m('span', { className: 'LinkRobinsWiki-seeAll-icon', 'aria-hidden': 'true' }, m('i', { className: 'fas fa-arrow-right' })),
+      ]
+    );
   }
 
   _renderRow(article: any, opts: { hideCategory?: boolean } = {}) {
