@@ -27,6 +27,9 @@ use LinkRobins\Wiki\WikiServiceProvider;
 return [
     (new Extend\Frontend('forum'))
         ->js(__DIR__ . '/js/dist/forum.js')
+        // The pages' lazily loaded chunks. Without this they are never
+        // published and every wiki route 404s back to the home page.
+        ->jsDirectory(__DIR__ . '/js/dist/forum')
         ->css(__DIR__ . '/less/forum.less')
         ->route('/wiki',           'linkrobins-wiki.index', Content\IndexPage::class)
         ->route('/wiki/new',       'linkrobins-wiki.compose')

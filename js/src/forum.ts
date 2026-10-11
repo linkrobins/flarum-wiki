@@ -9,9 +9,6 @@ import WikiRevision from './common/models/WikiRevision';
 import WikiComment from './common/models/WikiComment';
 import WikiReport from './common/models/WikiReport';
 
-import WikiIndexPage from './forum/components/WikiIndexPage';
-import WikiComposePage from './forum/components/WikiComposePage';
-import WikiShowPage from './forum/components/WikiShowPage';
 import WikiSearchSource from './forum/components/WikiSearchSource';
 
 import { tr } from './forum/utils/translate';
@@ -26,10 +23,14 @@ app.initializers.add('linkrobins-wiki', () => {
   app.store.models['linkrobins-wiki-revisions'] = WikiRevision;
   app.store.models['linkrobins-wiki-comments'] = WikiComment;
 
-  app.routes['linkrobins-wiki.index'] = { path: BASE_PATH, component: WikiIndexPage };
-  app.routes['linkrobins-wiki.compose'] = { path: BASE_PATH + '/new', component: WikiComposePage };
-  app.routes['linkrobins-wiki.show'] = { path: BASE_PATH + '/:id', component: WikiShowPage };
-  app.routes['linkrobins-wiki.edit'] = { path: BASE_PATH + '/:id/edit', component: WikiComposePage };
+  // The wiki pages load on demand, as their own chunks: a visitor reading a
+  // discussion never opens them, and parsing them on every page costs phones
+  // time. extend.php publishes the chunks with ->jsDirectory(); without it
+  // they 404 and every wiki route falls back to the home page.
+  app.routes['linkrobins-wiki.index'] = { path: BASE_PATH, component: () => import('./forum/components/WikiIndexPage') };
+  app.routes['linkrobins-wiki.compose'] = { path: BASE_PATH + '/new', component: () => import('./forum/components/WikiComposePage') };
+  app.routes['linkrobins-wiki.show'] = { path: BASE_PATH + '/:id', component: () => import('./forum/components/WikiShowPage') };
+  app.routes['linkrobins-wiki.edit'] = { path: BASE_PATH + '/:id/edit', component: () => import('./forum/components/WikiComposePage') };
 
   // Wiki articles in the forum's own search dropdown, under their own heading.
   extend(GlobalSearch.prototype, 'sourceItems', (items: any) => {
