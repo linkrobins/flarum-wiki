@@ -14,4 +14,4 @@ permissions:
 
 jobs:
   taint:
-    uses: karl-bullock/ci-workflows/.github/workflows/psalm.yml@psalm-taint
+    uses: karl-bullock/ci-workflows/.github/workflows/psalm.yml@v2
