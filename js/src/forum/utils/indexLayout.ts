@@ -68,7 +68,9 @@ export function parseIndexLayout(text: string): WikiBlock[] {
       return;
     }
 
-    const m = trimmed.match(/^\[(\w[\w-]*)((?:\s+[\w-]+=(?:"[^"]*"|'[^']*'|[^\s\]]+))*)\s*\]$/);
+    // An unquoted value may not START with a quote. Otherwise `"..."` could be
+    // matched either way, and a long malformed line backtracks exponentially.
+    const m = trimmed.match(/^\[(\w[\w-]*)((?:\s+[\w-]+=(?:"[^"]*"|'[^']*'|[^\s\]"'][^\s\]]*))*)\s*\]$/);
     if (m) {
       flush();
       blocks.push({ type: m[1].toLowerCase(), attrs: parseAttrs(m[2]) });
