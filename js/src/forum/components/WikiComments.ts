@@ -23,7 +23,7 @@ export default class WikiComments extends Component {
 
   oninit(vnode: any) {
     super.oninit(vnode);
-    this.article = this.attrs.article;
+    this.article = (this.attrs as any).article;
     this._load();
   }
 

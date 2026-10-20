@@ -45,7 +45,7 @@ export function parseIndexLayout(text: string): WikiBlock[] {
     buf = [];
   };
 
-  let html: string[] | null = null;
+  let html = null as string[] | null;
 
   (text || '').split('\n').forEach((line) => {
     const trimmed = line.trim();
