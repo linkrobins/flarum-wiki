@@ -84,7 +84,7 @@ export default class WikiShowPage extends Page {
       cancelAnimationFrame(this._spyRaf);
       this._spyRaf = null;
     }
-    if (super.onremove) super.onremove(vnode);
+    if (super.onremove as ((vnode: any) => void) | undefined) super.onremove(vnode);
   }
 
   onbeforeupdate(vnode: any) {

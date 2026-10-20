@@ -22,7 +22,7 @@ export default class WikiReportModal extends FormModal {
 
   oninit(vnode: any) {
     super.oninit(vnode);
-    this.article = (this.attrs && this.attrs.article) || null;
+    this.article = (this.attrs && (this.attrs as any).article) || null;
     this.reason = 'inaccurate';
     this.detail = '';
     this.saving = false;

@@ -91,7 +91,9 @@ export default class WikiIndexSidebar extends IndexSidebar {
     // The active category comes from the page (e.g. the article's category on
     // an article page), falling back to the ?category= filter on the index.
     const active =
-      this.attrs && this.attrs.activeCategory != null && this.attrs.activeCategory !== '' ? this.attrs.activeCategory : m.route.param('category');
+      this.attrs && (this.attrs as any).activeCategory != null && (this.attrs as any).activeCategory !== ''
+        ? (this.attrs as any).activeCategory
+        : m.route.param('category');
 
     // The wiki's own section starts at -20, safely below the global nav links
     // (core's sit at 100..-10 and cross-extension ones like ours use -11), so

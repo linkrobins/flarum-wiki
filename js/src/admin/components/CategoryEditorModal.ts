@@ -23,7 +23,7 @@ export default class CategoryEditorModal extends FormModal {
 
   oninit(vnode: any) {
     super.oninit(vnode);
-    const category = this.attrs && this.attrs.category;
+    const category = this.attrs && (this.attrs as any).category;
     this.category = category || null;
     this.editId = category ? category.id() : null;
     this.name = (category && category.name()) || '';
@@ -207,7 +207,7 @@ export default class CategoryEditorModal extends FormModal {
       .then(() => {
         this.saving = false;
         try {
-          if (this.attrs.onSaved) this.attrs.onSaved();
+          if ((this.attrs as any).onSaved) (this.attrs as any).onSaved();
         } catch (e) {}
         try {
           app.modal.close();
@@ -238,7 +238,7 @@ export default class CategoryEditorModal extends FormModal {
       .then(() => {
         this.saving = false;
         try {
-          if (this.attrs.onSaved) this.attrs.onSaved();
+          if ((this.attrs as any).onSaved) (this.attrs as any).onSaved();
         } catch (e) {}
         try {
           app.modal.close();
