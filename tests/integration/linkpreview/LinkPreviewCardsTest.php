@@ -36,6 +36,7 @@ class LinkPreviewCardsTest extends TestCase
                 ['id' => 1, 'category_id' => 1, 'user_id' => 2, 'title' => 'Installing the widget', 'slug' => 'installing-the-widget', 'content' => '<t><p>Unpack it and plug it in.</p></t>', 'last_edited_at' => $edited, 'created_at' => $edited, 'updated_at' => $edited],
                 ['id' => 2, 'user_id' => 2, 'title' => 'Unfinished draft', 'slug' => 'unfinished-draft', 'content' => '<t><p>Body.</p></t>', 'is_draft' => true, 'last_edited_at' => $edited, 'created_at' => $edited, 'updated_at' => $edited],
                 ['id' => 3, 'user_id' => 2, 'title' => 'Retired page', 'slug' => 'retired-page', 'content' => '<t><p>Body.</p></t>', 'deleted_at' => $edited, 'last_edited_at' => $edited, 'created_at' => $edited, 'updated_at' => $edited],
+                ['id' => 4, 'user_id' => 2, 'title' => 'Broken body', 'slug' => 'broken-body', 'content' => '<r><p>Never closed', 'last_edited_at' => $edited, 'created_at' => $edited, 'updated_at' => $edited],
             ],
             'linkrobins_wiki_article_slugs' => [
                 ['article_id' => 1, 'slug' => 'widget-setup', 'created_at' => $edited],
@@ -102,6 +103,15 @@ class LinkPreviewCardsTest extends TestCase
     }
 
     #[Test]
+    public function a_body_that_will_not_parse_costs_the_card_only_its_description(): void
+    {
+        $data = $this->preview('http://localhost/wiki/broken-body');
+
+        $this->assertEquals('Broken body', $data['title']);
+        $this->assertNull($data['description']);
+    }
+
+    #[Test]
     public function an_article_nobody_wrote_is_no_card(): void
     {
         $this->assertEquals('no_metadata', $this->preview('http://localhost/wiki/nothing-here')['error']);
@@ -114,8 +124,8 @@ class LinkPreviewCardsTest extends TestCase
         $author = $this->preview('http://localhost/wiki', 2);
 
         $this->assertEquals('linkrobins-wiki.index', $guest['type']);
-        $this->assertEquals([['type' => 'count', 'key' => 'linkrobins-wiki.forum.link_preview.articles', 'count' => 1]], $guest['meta']);
-        $this->assertEquals(2, $author['meta'][0]['count'], 'their own draft counts too');
+        $this->assertEquals([['type' => 'count', 'key' => 'linkrobins-wiki.forum.link_preview.articles', 'count' => 2]], $guest['meta']);
+        $this->assertEquals(3, $author['meta'][0]['count'], 'their own draft counts too');
     }
 
     #[Test]

@@ -16,9 +16,15 @@ use Datlechin\LinkPreview\Internal\RouteCard;
 use Flarum\User\User;
 use LinkRobins\Wiki\Access\WikiAbilities;
 use LinkRobins\Wiki\WikiArticle;
+use Psr\Log\LoggerInterface;
 
 class ArticleCard implements RouteCard
 {
+    public function __construct(
+        protected LoggerInterface $log,
+    ) {
+    }
+
     public function card(MatchedRoute $route, User $actor): ?Card
     {
         $article = WikiArticle::findByAddress(
@@ -46,8 +52,19 @@ class ArticleCard implements RouteCard
 
         return new Card(
             title: $article->title,
-            description: $article->excerpt() ?: null,
+            description: $this->excerpt($article),
             meta: $meta,
         );
+    }
+
+    protected function excerpt(WikiArticle $article): ?string
+    {
+        try {
+            return $article->excerpt() ?: null;
+        } catch (\Throwable $e) {
+            $this->log->warning('[linkrobins/wiki] excerpt failed', ['exception' => $e]);
+
+            return null;
+        }
     }
 }
