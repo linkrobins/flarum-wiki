@@ -5,6 +5,7 @@ use Flarum\Search\Database\DatabaseSearchDriver;
 use LinkRobins\Wiki\Access;
 use LinkRobins\Wiki\Api\Resource\WikiArticleResource;
 use LinkRobins\Wiki\Content;
+use LinkRobins\Wiki\LinkPreview;
 use LinkRobins\Wiki\Seo;
 use LinkRobins\Wiki\Sitemap;
 use LinkRobins\Wiki\Api\Resource\WikiCategoryResource;
@@ -53,6 +54,13 @@ return [
             (new \FoF\Sitemap\Extend\Sitemap())
                 ->addResource(Sitemap\ArticleSitemapResource::class)
                 ->addStaticUrl('linkrobins-wiki.index'),
+        ]),
+
+    (new Extend\Conditional())
+        ->whenExtensionEnabled('datlechin-link-preview', fn () => [
+            (new \Datlechin\LinkPreview\Extend\LinkPreview())
+                ->route('linkrobins-wiki.show', LinkPreview\ArticleCard::class)
+                ->route('linkrobins-wiki.index', LinkPreview\IndexCard::class),
         ]),
 
     (new Extend\Frontend('admin'))

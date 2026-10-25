@@ -102,6 +102,8 @@ linkrobins-wiki:
       all_button: 'Search the wiki for "{query}"'
       empty: 'No articles match "{query}".'
     nav: Wiki
+    link_preview:
+      articles: '{count, plural, one {# article} other {# articles}}'
     common:
       date_at_time: '{date} at {time}'
     index:

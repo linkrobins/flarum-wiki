@@ -29,14 +29,19 @@
         "flarum/phpstan": "^2.0",
         "flarum/audit": "^2.0",
         "fof/seo": "^4.0@beta",
-        "fof/sitemap": "^3.0@beta"
+        "fof/sitemap": "^3.0@beta",
+        "datlechin/flarum-link-preview": "^2.1"
+    },
+    "conflict": {
+        "datlechin/flarum-link-preview": "<2.1"
     },
     "minimum-stability": "beta",
     "prefer-stable": true,
     "suggest": {
         "fof/upload": "For file attachments. The wiki extension automatically renders an 'Attach files' button when this is installed.",
         "fof/seo": "Adds article metadata through its page driver: schema.org Article data, social tags and its robots handling.",
-        "fof/sitemap": "Lists every published wiki article, and the wiki index, in the forum sitemap."
+        "fof/sitemap": "Lists every published wiki article, and the wiki index, in the forum sitemap.",
+        "datlechin/flarum-link-preview": "Turns links to wiki articles into cards, and previews links inside articles, FAQ answers and comments."
     },
     "autoload": {
         "psr-4": {
@@ -74,7 +79,10 @@
                 "name": "fas fa-book",
                 "color": "#07adcc",
                 "backgroundColor": "#1a2535"
-            }
+            },
+            "optional-dependencies": [
+                "datlechin/flarum-link-preview"
+            ]
         },
         "flarum-cli": {
             "modules": {

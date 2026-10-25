@@ -67,6 +67,19 @@ class WikiAbilities
     }
 
     /**
+     * @param Builder<WikiArticle> $query
+     * @return Builder<WikiArticle>
+     */
+    public static function scopeVisibleArticles(Builder $query, User $actor): Builder
+    {
+        if (self::isEditor($actor)) {
+            $query->withTrashed();
+        }
+
+        return self::scopeVisibleDrafts($query, $actor);
+    }
+
+    /**
      * Whether the actor may post comments on articles (admins always can).
      */
     public static function canComment(User $actor): bool

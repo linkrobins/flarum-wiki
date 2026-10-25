@@ -6,7 +6,8 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "paths": {
-      "flarum/*": ["../vendor/flarum/core/js/dist-typings/*"]
+      "flarum/*": ["../vendor/flarum/core/js/dist-typings/*"],
+      "ext:datlechin/flarum-link-preview/*": ["../vendor/datlechin/flarum-link-preview/js/dist-typings/*"]
     }
   }
 }

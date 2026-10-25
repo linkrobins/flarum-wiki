@@ -21,6 +21,7 @@ A wiki / knowledge-base extension for Flarum 2. Members write public articles wi
 - **File attachments.** Optional integration with `fof/upload`.
 - **Search.** A search box beside the wiki's title finds articles by title or text as you type, title matches first. A link with `?q=` opens straight to a search. Articles also appear in the forum's own search dropdown, alongside discussions and users.
 - **Audit log.** When `flarum/audit` is installed, reports and article changes (created, edited, deleted, restored) are recorded in it.
+- **Link Preview.** With `datlechin/flarum-link-preview` 2.1 or later, links to articles and to `/wiki` turn into cards, and links inside articles, FAQ answers and comments get previews.
 
 ## Search engines and sitemaps
 
