@@ -17,12 +17,10 @@ use LinkRobins\Wiki\WikiReport;
 use LinkRobins\Wiki\Faq;
 use LinkRobins\Wiki\Slug;
 use LinkRobins\Wiki\WikiArticle;
-use LinkRobins\Wiki\WikiArticleSlug;
 use LinkRobins\Wiki\WikiCategory;
 use Psr\Log\LoggerInterface;
 use Tobyz\JsonApiServer\Context;
 use Tobyz\JsonApiServer\Exception\BadRequestException;
-use s9e\TextFormatter\Utils as TextFormatterUtils;
 
 class WikiArticleResource extends AbstractDatabaseResource
 {
@@ -54,11 +52,7 @@ class WikiArticleResource extends AbstractDatabaseResource
         /** @var \Illuminate\Database\Eloquent\Builder<WikiArticle> $query */
         $query->withCount('revisions as revision_count');
 
-        if (WikiAbilities::isEditor($context->getActor())) {
-            $query->withTrashed();
-        }
-
-        WikiAbilities::scopeVisibleDrafts($query, $context->getActor());
+        WikiAbilities::scopeVisibleArticles($query, $context->getActor());
     }
 
     /**
@@ -70,22 +64,7 @@ class WikiArticleResource extends AbstractDatabaseResource
      */
     public function find(string $id, Context $context): ?object
     {
-        if (preg_match('/^\d+$/', $id)) {
-            return $this->query($context)->find($id);
-        }
-
-        $article = $this->query($context)->where('slug', $id)->first();
-
-        if ($article) {
-            return $article;
-        }
-
-        // A slug the article used to answer to. Returning the article keeps
-        // shared links working; the frontend rewrites the address bar to the
-        // current slug on load, so the old URL is a redirect in effect.
-        $historic = WikiArticleSlug::query()->where('slug', $id)->value('article_id');
-
-        return $historic ? $this->query($context)->find($historic) : null;
+        return WikiArticle::findByAddress($this->query($context), $id);
     }
 
     public function endpoints(): array
@@ -172,17 +151,8 @@ class WikiArticleResource extends AbstractDatabaseResource
             // page.
             Schema\Str::make('excerpt')
                 ->get(function (WikiArticle $article) {
-                    // `content` is an accessor that unparses back to Markdown
-                    // source; `parsed_content` is the stored representation,
-                    // which is what removeFormatting() expects.
-                    $content = (string) $article->parsed_content;
-
-                    if ($content === '') {
-                        return '';
-                    }
-
                     try {
-                        $plain = TextFormatterUtils::removeFormatting($content);
+                        return $article->excerpt();
                     } catch (\Throwable $e) {
                         // A body that will not parse should cost a card its
                         // excerpt, not the whole index its listing.
@@ -190,10 +160,6 @@ class WikiArticleResource extends AbstractDatabaseResource
 
                         return '';
                     }
-
-                    $plain = trim((string) preg_replace('/\s+/u', ' ', $plain));
-
-                    return mb_strimwidth($plain, 0, 180, '…');
                 }),
 
             Schema\Str::make('contentHtml')

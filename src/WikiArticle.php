@@ -6,9 +6,11 @@ use Flarum\Database\AbstractModel;
 use Flarum\Formatter\Formattable;
 use Flarum\Formatter\HasFormattedContent;
 use Flarum\User\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use s9e\TextFormatter\Utils as TextFormatterUtils;
 
 /**
  * @property int $id
@@ -78,5 +80,38 @@ class WikiArticle extends AbstractModel implements Formattable
     public function revisions(): HasMany
     {
         return $this->hasMany(WikiRevision::class, 'article_id');
+    }
+
+    /**
+     * @param Builder<self> $query
+     */
+    public static function findByAddress(Builder $query, string $address): ?self
+    {
+        if (preg_match('/^\d+$/', $address)) {
+            return (clone $query)->find($address);
+        }
+
+        $article = (clone $query)->where('slug', $address)->first();
+
+        if ($article) {
+            return $article;
+        }
+
+        $historic = WikiArticleSlug::query()->where('slug', $address)->value('article_id');
+
+        return $historic ? $query->find($historic) : null;
+    }
+
+    public function excerpt(int $width = 180): string
+    {
+        $content = (string) $this->parsed_content;
+
+        if ($content === '') {
+            return '';
+        }
+
+        $plain = trim((string) preg_replace('/\s+/u', ' ', TextFormatterUtils::removeFormatting($content)));
+
+        return mb_strimwidth($plain, 0, $width, '…');
     }
 }

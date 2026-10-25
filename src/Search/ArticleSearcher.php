@@ -52,14 +52,10 @@ class ArticleSearcher extends AbstractSearcher
             ->select('linkrobins_wiki_articles.*')
             ->withCount('revisions as revision_count');
 
-        if (WikiAbilities::isEditor($actor)) {
-            $query->withTrashed();
-        }
-
         // The Index endpoint runs through here, not the resource's scope, so
-        // the draft rule has to be applied again or every listing and every
-        // search would leak unfinished articles.
-        WikiAbilities::scopeVisibleDrafts($query, $actor);
+        // the visibility rules have to be applied again or every listing and
+        // every search would leak unfinished articles.
+        WikiAbilities::scopeVisibleArticles($query, $actor);
 
         return $query;
     }

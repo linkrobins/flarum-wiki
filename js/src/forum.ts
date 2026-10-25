@@ -10,6 +10,7 @@ import WikiComment from './common/models/WikiComment';
 import WikiReport from './common/models/WikiReport';
 
 import WikiSearchSource from './forum/components/WikiSearchSource';
+import extendLinkPreview from './forum/extendLinkPreview';
 
 import { tr } from './forum/utils/translate';
 import { basePath, navPriority, navHidden, BASE_PATH } from './forum/utils/helpers';
@@ -50,4 +51,8 @@ app.initializers.add('linkrobins-wiki', () => {
 
     items.add('linkrobins-wiki', m(LinkButton, { href: basePath() + BASE_PATH, icon: 'fas fa-book' }, tr('nav', 'Wiki')), navPriority());
   });
+
+  if ('datlechin-link-preview' in flarum.extensions) {
+    extendLinkPreview();
+  }
 });
