@@ -110,8 +110,34 @@ class WikiArticle extends AbstractModel implements Formattable
             return '';
         }
 
-        $plain = trim((string) preg_replace('/\s+/u', ' ', TextFormatterUtils::removeFormatting($content)));
+        $plain = trim((string) preg_replace('/\s+/u', ' ', self::plainText($content)));
 
         return mb_strimwidth($plain, 0, $width, '…');
+    }
+
+    /**
+     * The text of a stored TextFormatter XML document. Malformed XML makes
+     * DOMDocument warn and then dereference null, which Flarum raises as an
+     * exception, so the document is checked first with libxml's own errors
+     * collected (and the previous setting restored) and a body that will not
+     * load falls back to its tags stripped.
+     */
+    private static function plainText(string $xml): string
+    {
+        $previous = libxml_use_internal_errors(true);
+
+        try {
+            $dom = new \DOMDocument();
+            $valid = $dom->loadXML($xml) && $dom->documentElement !== null;
+        } finally {
+            libxml_clear_errors();
+            libxml_use_internal_errors($previous);
+        }
+
+        if ($valid) {
+            return TextFormatterUtils::removeFormatting($xml);
+        }
+
+        return html_entity_decode(strip_tags($xml), ENT_QUOTES | ENT_HTML5, 'UTF-8');
     }
 }

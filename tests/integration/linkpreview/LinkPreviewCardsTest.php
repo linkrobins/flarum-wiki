@@ -103,12 +103,12 @@ class LinkPreviewCardsTest extends TestCase
     }
 
     #[Test]
-    public function a_body_that_will_not_parse_costs_the_card_only_its_description(): void
+    public function a_body_that_will_not_parse_still_gets_a_plain_text_description(): void
     {
         $data = $this->preview('http://localhost/wiki/broken-body');
 
         $this->assertEquals('Broken body', $data['title']);
-        $this->assertNull($data['description']);
+        $this->assertSame('Never closed', $data['description']);
     }
 
     #[Test]
