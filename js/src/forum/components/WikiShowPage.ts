@@ -23,6 +23,7 @@ import {
   mobileTitle,
   relatedEnabled,
   relatedLimit,
+  categoryTextStyle,
   safeNavigate,
 } from '../utils/helpers';
 import { canEditWikiArticles, canViewWikiHistory, canReportWikiArticle } from '../utils/permissions';
@@ -551,7 +552,7 @@ export default class WikiShowPage extends Page {
           {
             className: 'LinkRobinsWiki-byline-cat',
             href: basePath() + BASE_PATH + '?category=' + encodeURIComponent(cat.id()),
-            style: 'color: ' + (cat.color() || 'inherit'),
+            style: categoryTextStyle(cat.color()),
           },
           cat.name()
         )
