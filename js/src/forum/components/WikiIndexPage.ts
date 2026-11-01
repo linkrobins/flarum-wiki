@@ -17,6 +17,7 @@ import {
   emptySidebar,
   mobileTitle,
   executeContentScripts,
+  categoryTextStyle,
 } from '../utils/helpers';
 import { canCreateWikiArticle } from '../utils/permissions';
 import { loadArticles, loadArticle, loadCategories, QUIET } from '../utils/api';
@@ -710,7 +711,7 @@ export default class WikiIndexPage extends Page {
           'h2',
           {
             className: 'LinkRobinsWiki-group-title',
-            style: g.cat && g.cat.color() ? 'color: ' + g.cat.color() : undefined,
+            style: g.cat ? categoryTextStyle(g.cat.color()) : undefined,
           },
           name
         ),
@@ -733,7 +734,7 @@ export default class WikiIndexPage extends Page {
         href,
         className: 'LinkRobinsWiki-seeAll',
         key: 'see-all',
-        style: color ? '--lr-wiki-accent: ' + color : undefined,
+        style: color ? '--lr-wiki-accent: ' + color + ';' + categoryTextStyle(color) : undefined,
         onclick: (e: any) => safeNavigate(href, e),
       },
       [
@@ -773,9 +774,7 @@ export default class WikiIndexPage extends Page {
             // The author is the one field on a wiki card nobody navigates by,
             // and it was a third of what stretched every row. The category
             // goes too wherever a heading above already says it.
-            cat && !opts.hideCategory
-              ? m('span', { className: 'LinkRobinsWiki-row-cat', style: 'color: ' + (cat.color() || 'inherit') }, cat.name())
-              : null,
+            cat && !opts.hideCategory ? m('span', { className: 'LinkRobinsWiki-row-cat', style: categoryTextStyle(cat.color()) }, cat.name()) : null,
             m('span', { className: 'LinkRobinsWiki-row-date' }, formatDate(article.lastEditedAt() || article.createdAt())),
           ]),
         ]),

@@ -68,6 +68,21 @@
         margin-bottom: 0;
     }
 }
+// Category colors used as TEXT. The component hands each color over as two
+// text-safe variants (see categoryTextStyle in utils/helpers.ts): a deeper one
+// for the light theme and a lighter one for the dark theme, so a mid-tone such
+// as #22a06b stays at 4.5:1 or better on either. Borders and icons keep the
+// admin's exact color.
+.LinkRobinsWiki-group-title,
+.LinkRobinsWiki-seeAll-name,
+.LinkRobinsWiki-row-cat,
+.LinkRobinsWiki-byline a.LinkRobinsWiki-byline-cat {
+    color: var(--lr-wiki-cat-l, inherit);
+
+    [data-theme^='dark'] & {
+        color: var(--lr-wiki-cat-d, inherit);
+    }
+}
 .LinkRobinsWiki-group-title {
     font-size: calc(1.1em * var(--lr-text-scale, 1));
     font-weight: 600;
@@ -1128,8 +1143,18 @@
         margin: 0;
         padding-left: 18px;
 
+        // Each link gets a 24px-tall hit area (WCAG 2.2 target size) from
+        // padding, with the old 4px gap between rows folded into it, so the
+        // list looks the same.
         li {
-            margin-bottom: 4px;
+            margin: 0;
+        }
+
+        a {
+            display: inline-block;
+            min-height: 24px;
+            padding: 2px 0;
+            line-height: 20px;
         }
     }
 }

@@ -216,3 +216,60 @@ export function userLink(user: User | null | undefined): any {
   const href = basePath() + '/u/' + encodeURIComponent(username);
   return Link.component({ href }, label);
 }
+
+// --- Category colors as text ---------------------------------------------
+
+/** Relative luminance of an sRGB color (WCAG 2.x). */
+function luminance([r, g, b]: number[]): number {
+  const lin = (v: number) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+}
+
+function contrast(a: number[], b: number[]): number {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+function parseHex(color: string): number[] | null {
+  const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(color || '').trim());
+  if (!m) return null;
+  const h = m[1].length === 3 ? m[1].replace(/./g, '$&$&') : m[1];
+  return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
+}
+
+const toHex = (rgb: number[]) => '#' + rgb.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
+
+/** Move a color toward `target` until it clears `ratio` against `bg` (hue is kept). */
+function nudge(rgb: number[], target: number[], bg: number[], ratio: number): number[] {
+  let out = rgb;
+  for (let t = 0; t <= 1.0001 && contrast(out, bg) < ratio; t += 0.02) {
+    out = rgb.map((v, i) => v + (target[i] - v) * t);
+  }
+  return out;
+}
+
+// The worst-case backgrounds category text sits on: white (and the faintly
+// gray section tint, hence the margin over 4.5) in the light theme, and core's
+// dark control background in the dark theme.
+const LIGHT_BG = [255, 255, 255];
+const DARK_BG = [30, 36, 43];
+
+/**
+ * An inline style that hands a category's color to the stylesheet as two
+ * text-safe variants: `--lr-wiki-cat-l` for the light theme and
+ * `--lr-wiki-cat-d` for the dark one. An admin picks a category color as an
+ * accent, and mid-tones like #22a06b fail 4.5:1 as text on white; this darkens
+ * (light) or lightens (dark) just enough to pass, the way the site's own cyan
+ * is deepened to #07788f. Anything that is not a hex color is passed through.
+ */
+export function categoryTextStyle(color: string | null | undefined): string | undefined {
+  if (!color) return undefined;
+  const rgb = parseHex(color);
+  if (!rgb) return `--lr-wiki-cat-l:${color};--lr-wiki-cat-d:${color}`;
+  const light = toHex(nudge(rgb, [0, 0, 0], LIGHT_BG, 4.8));
+  const dark = toHex(nudge(rgb, [255, 255, 255], DARK_BG, 4.8));
+  return `--lr-wiki-cat-l:${light};--lr-wiki-cat-d:${dark}`;
+}
