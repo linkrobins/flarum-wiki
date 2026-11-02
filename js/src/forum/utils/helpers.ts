@@ -178,6 +178,55 @@ export function showError(message: any): void {
 }
 
 /**
+ * Make FoF Upload's file buttons (`[upl-file]`) download inside wiki content.
+ *
+ * FoF Upload renders the button as plain markup carrying
+ * data-fof-upload-download-uuid and binds the click only inside its own Post
+ * component, so in anything that is not a discussion post (articles, FAQ
+ * answers, comments) the button shows but does nothing. We bind the same click
+ * ourselves, using FoF Upload's own post-less route
+ * (/api/fof/download/{uuid}), which checks the actor's download permission
+ * server-side; the post-scoped route needs a post id a wiki article does not
+ * have. Nothing here touches FoF Upload's JS, so it works the same whether
+ * FoF Upload is absent (no such buttons exist), old or current.
+ *
+ * One delegated listener per content node; the node outlives m.trust rewrites.
+ */
+export function bindUploadDownloads(el: Element): void {
+  const node = el as any;
+  if (node._lrWikiDownloadsBound) return;
+  node._lrWikiDownloadsBound = true;
+
+  el.addEventListener('click', (e: Event) => {
+    try {
+      const target = e.target as Element | null;
+      const button = target && target.closest ? (target.closest('[data-fof-upload-download-uuid]') as HTMLElement | null) : null;
+      if (!button || !el.contains(button)) return;
+      const uuid = button.getAttribute('data-fof-upload-download-uuid');
+      if (!uuid) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (readForumAttribute('fof-upload.canDownload') === false) {
+        let message: any = app.translator.trans('fof-upload.forum.states.unauthorized', {}, true);
+        if (typeof message !== 'string' || message.indexOf('fof-upload.') === 0) {
+          message = trText('errors.download_denied', 'You do not have permission to download this file.');
+        }
+        showError(message);
+        return;
+      }
+
+      window.open(app.forum.attribute('apiUrl') + '/fof/download/' + encodeURIComponent(uuid));
+    } catch (err) {
+      try {
+        console.error('[linkrobins/wiki] file download failed:', err);
+      } catch (e2) {}
+    }
+  });
+}
+
+/**
  * Run the <script> tags embedded in formatted content, once per content
  * string. The formatter can emit scripts inside rendered HTML (core's
  * markdown does this for its syntax-highlighting loader), but HTML inserted
@@ -187,9 +236,14 @@ export function showError(message: any): void {
  * The executed-content marker lives on the DOM node itself: Mithril only
  * rewrites the element's HTML when the trusted string changes, so a stale
  * marker exactly tracks a stale (already-executed) DOM.
+ *
+ * Also wires FoF Upload's download buttons inside the content (see
+ * bindUploadDownloads), since every place that renders formatted wiki HTML
+ * already calls this.
  */
 export function executeContentScripts(el: Element | null | undefined, html: string): void {
   if (!el) return;
+  bindUploadDownloads(el);
   const node = el as any;
   if (node._lrWikiScriptedHtml === html) return;
   node._lrWikiScriptedHtml = html;

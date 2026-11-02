@@ -5,9 +5,19 @@ import Button from 'flarum/common/components/Button';
 import PageStructure from 'flarum/forum/components/PageStructure';
 import WikiIndexSidebar from './WikiIndexSidebar';
 import { tr } from '../utils/translate';
-import { basePath, BASE_PATH, articleHref, showError, fullWidth, pageClassName, emptySidebar, mobileTitle } from '../utils/helpers';
+import {
+  basePath,
+  BASE_PATH,
+  articleHref,
+  showError,
+  fullWidth,
+  pageClassName,
+  emptySidebar,
+  mobileTitle,
+  readForumAttribute,
+} from '../utils/helpers';
 import { canCreateWikiArticle } from '../utils/permissions';
-import { loadArticle, loadCategories, createArticle, updateArticle } from '../utils/api';
+import { loadArticle, loadCategories, createArticle, updateArticle, uploadFilesToBody } from '../utils/api';
 import { wikiComposerAvailable, wikiComposerOpenFor, openWikiComposer, wikiComposerPreview } from '../utils/composer';
 
 /**
@@ -30,6 +40,9 @@ export default class WikiComposePage extends Page {
   isDraft = false;
   body = '';
   categoryId: string = '';
+  // Fallback-editor uploads (see _renderTextareaFallback).
+  uploadingCount = 0;
+  uploadError: string | null = null;
   // FAQ entries being edited. `uid` is a client-side key so removals don't
   // make mithril reuse the wrong entry's inputs.
   faq: { uid: number; question: string; answer: string }[] = [];
@@ -320,7 +333,7 @@ export default class WikiComposePage extends Page {
   }
 
   _renderTextareaFallback() {
-    return m('textarea', {
+    const textarea = m('textarea', {
       className: 'FormControl',
       rows: 12,
       value: this.body,
@@ -330,6 +343,36 @@ export default class WikiComposePage extends Page {
         this.body = e.target.value;
       },
     });
+
+    // Without the docked composer there is no FoF Upload button, so offer the
+    // same upload here when FoF Upload is enabled and the actor may upload.
+    // The attribute is only serialized while fof/upload is enabled.
+    if (readForumAttribute('fof-upload.canUpload') !== true) return textarea;
+
+    return [
+      textarea,
+      m('div', { className: 'LinkRobinsWiki-attach' }, [
+        m('label', { className: 'Button' }, [
+          m('i', { className: 'fas fa-file-upload Button-icon', 'aria-hidden': 'true' }),
+          ' ',
+          tr('compose.attach', 'Attach files'),
+          m('input', {
+            type: 'file',
+            multiple: true,
+            className: 'LinkRobinsWiki-attachInput',
+            style: { display: 'none' },
+            disabled: this.saving || this.uploadingCount > 0,
+            onchange: (e: any) => {
+              const files = e.target.files;
+              if (files && files.length) uploadFilesToBody(this, files, 'body');
+              e.target.value = '';
+            },
+          }),
+        ]),
+        this.uploadingCount > 0 ? m('span', { className: 'helpText' }, ' ' + tr('compose.uploading', 'Uploading…')) : null,
+        this.uploadError ? m('div', { className: 'helpText LinkRobinsWiki-attachError' }, this.uploadError) : null,
+      ]),
+    ];
   }
 
   _openComposer() {
