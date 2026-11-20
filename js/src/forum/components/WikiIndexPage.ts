@@ -1,6 +1,5 @@
 import Page from 'flarum/common/components/Page';
 import Button from 'flarum/common/components/Button';
-import extractText from 'flarum/common/utils/extractText';
 import LoadingIndicator from 'flarum/common/components/LoadingIndicator';
 import PageStructure from 'flarum/forum/components/PageStructure';
 import WikiIndexSidebar from './WikiIndexSidebar';
@@ -392,13 +391,16 @@ export default class WikiIndexPage extends Page {
   _renderBody() {
     // Custom homepage layout (only when no category filter or search is on).
     if (!this.category && !this.query.trim() && this.blocks.length) {
+      const hasSearchBlock = this.blocks.some((block) => block.type === 'search');
+      const newArticleButton = this._renderNewArticleButton();
+
       return [
-        // The admin's layout carries its own headings, so the search box sits
-        // on its own here rather than under a title the layout did not ask for.
-        m('header', { className: 'LinkRobinsWiki-header LinkRobinsWiki-indexHeader LinkRobinsWiki-indexHeader--searchOnly' }, [
-          this._renderSearch(),
-          this._renderNewArticleButton(),
-        ]),
+        !hasSearchBlock || newArticleButton
+          ? m('header', { className: 'LinkRobinsWiki-header LinkRobinsWiki-indexHeader LinkRobinsWiki-indexHeader--searchOnly' }, [
+              hasSearchBlock ? null : this._renderSearch(),
+              newArticleButton,
+            ])
+          : null,
         m(
           'div',
           { className: 'LinkRobinsWiki-home' },
@@ -416,32 +418,53 @@ export default class WikiIndexPage extends Page {
     return [this._renderHeader(), body];
   }
 
-  /**
-   * The wiki's search box, beside the page title. Searches title and body as
-   * you type, after a short pause. Built to match the support ticket search
-   * exactly, so the two extensions read as one product; change both together.
-   */
-  _renderSearch() {
-    return m('div', { className: 'LinkRobinsWiki-search', role: 'search' }, [
+  _renderSearch(inLayout = false) {
+    const label = trText('search.placeholder', 'Search the wiki');
+    const field = m('div', { className: 'LinkRobinsWiki-search', role: inLayout ? undefined : 'search' }, [
       m('i', { className: 'fas fa-search LinkRobinsWiki-search-icon', 'aria-hidden': 'true' }),
       m('input', {
         className: 'FormControl LinkRobinsWiki-search-input',
         type: 'search',
-        value: this.queryDraft,
-        placeholder: extractText(tr('search.placeholder', 'Search the wiki')),
-        'aria-label': extractText(tr('search.placeholder', 'Search the wiki')),
-        oninput: (e: any) => {
-          this.queryDraft = e.target.value;
-          clearTimeout(this._searchTimer);
-          this._searchTimer = setTimeout(() => {
-            const next = (this.queryDraft || '').trim();
-            if (next === this.query) return;
-            this.query = next;
-            this._init();
-          }, 300);
-        },
+        name: inLayout ? 'q' : undefined,
+        value: inLayout ? undefined : this.queryDraft,
+        placeholder: label,
+        'aria-label': label,
+        oninput: inLayout ? undefined : (event: Event) => this._updateSearch((event.currentTarget as HTMLInputElement).value),
       }),
     ]);
+
+    if (!inLayout) return field;
+
+    // Applying a search replaces the layout, so keep the field mounted until submit.
+    return m(
+      'form',
+      {
+        className: 'LinkRobinsWiki-homeSearch',
+        role: 'search',
+        onsubmit: (event: SubmitEvent) => {
+          event.preventDefault();
+          const query = String(new FormData(event.currentTarget as HTMLFormElement).get('q') ?? '').trim();
+          if (query) m.route.set(BASE_PATH, { q: query });
+        },
+      },
+      [field, m('button', { className: 'Button Button--primary', type: 'submit' }, tr('search.submit', 'Search'))]
+    );
+  }
+
+  /** Header search applies after a short pause, as on the support ticket list. */
+  _updateSearch(value: string) {
+    this.queryDraft = value;
+    clearTimeout(this._searchTimer);
+    this._searchTimer = setTimeout(() => {
+      const next = this.queryDraft.trim();
+      if (next === this.query) return;
+      if (!next && this._routeQuery && !this.category) {
+        m.route.set(BASE_PATH, {}, { replace: true });
+        return;
+      }
+      this.query = next;
+      this._init();
+    }, 300);
   }
 
   _renderHeader() {
@@ -546,6 +569,8 @@ export default class WikiIndexPage extends Page {
           block.attrs.title ? m('h2', { className: 'LinkRobinsWiki-homeBlock-title' }, block.attrs.title) : null,
           this._renderCategories(),
         ]);
+      case 'search':
+        return this._renderSearch(true);
       case 'html':
         return this._renderHtml(block);
       default:

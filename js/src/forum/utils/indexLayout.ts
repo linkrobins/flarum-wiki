@@ -27,6 +27,7 @@ function parseAttrs(s: string): Record<string, string> {
  *   [articles ... title="Heading"]          optional heading above the list
  *   [article id="N"]                        link to one article
  *   [categories]                            the category list
+ *   [search]                                the wiki search form
  *   [html] ... [/html]                      raw HTML, verbatim
  *
  * The [html] block is the one place markup passes through untouched. Only
