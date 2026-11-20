@@ -37,10 +37,13 @@ In **Wiki home page** in the admin settings, put one shortcode per line. Lines t
 [articles category="guides" title="Guides"]   with a heading above the list
 [article id="12"]                         a link to one article
 [categories]                              the category list
+[search]                                  a form that searches the wiki
 [html] ... [/html]                        raw HTML between the tags, left exactly as written
 ```
 
 Bare web addresses become links.
+
+Use `[search]` to put the search form in your layout. It replaces the search field in the home page header. Enter a query and press Enter or click **Search** to open the wiki results.
 
 ## Search engines and sitemaps
 

@@ -709,6 +709,21 @@
     margin: 0 0 12px;
 }
 
+.LinkRobinsWiki-homeSearch {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    @media @tablet-up {
+        max-width: 520px;
+    }
+
+    > .LinkRobinsWiki-search {
+        flex: 1;
+        min-width: 0;
+    }
+}
+
 .LinkRobinsWiki-prose {
     line-height: 1.6;
     // `1em` here is a no-op at the default size and scales the prose body text
