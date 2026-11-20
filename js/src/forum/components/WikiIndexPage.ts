@@ -451,7 +451,10 @@ export default class WikiIndexPage extends Page {
     );
   }
 
-  /** Header search applies after a short pause, as on the support ticket list. */
+  /**
+   * Header search matches the support ticket search, applying after a short
+   * pause. Keep the two extensions' search fields in sync when changing them.
+   */
   _updateSearch(value: string) {
     this.queryDraft = value;
     clearTimeout(this._searchTimer);
